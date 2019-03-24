@@ -1,8 +1,6 @@
-output: dwmblocks.o blocks.o
-	gcc dwmblocks.o blocks.o -o dwmblocks
-dwmblocks.o: dwmblocks.c
-	gcc -c dwmblocks.c 
-blocks.o: blocks.h
-	gcc -c blocks.h 
+output: dwmblocks.o
+	gcc dwmblocks.o -lX11 -o dwmblocks
+dwmblocks.o: dwmblocks.c blocks.h
+	gcc -c -lX11 dwmblocks.c 
 clean:
-	rm *.o dwmblocks
+	rm *.o *.gch dwmblocks

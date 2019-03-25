@@ -4,3 +4,6 @@ dwmblocks.o: dwmblocks.c blocks.h
 	gcc -c -lX11 dwmblocks.c 
 clean:
 	rm *.o *.gch dwmblocks
+install:
+	mkdir -p /usr/local/bin
+	cp -f dwmblocks /usr/local/bin

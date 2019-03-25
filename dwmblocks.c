@@ -95,7 +95,7 @@ void setupsignals()
 void getstatus(char *str)
 {
 	int j = 0;
-	for(int i = 0; i < 5; j+=strlen(statusbar[i++]))
+	for(int i = 0; i < LENGTH(blocks); j+=strlen(statusbar[i++]))
 	{	
 		strcpy(str + j, statusbar[i]);
 	}

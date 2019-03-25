@@ -3,16 +3,26 @@
 #include<string.h>
 #include<unistd.h>
 #include<signal.h>
-//#include<X11/Xutil.h>
 #include<X11/Xlib.h>
-//#include <X11/Xatom.h>
 #define LENGTH(X)               (sizeof(X) / sizeof (X[0]))
+
 typedef struct {
 	char* command;
 	unsigned int interval;
 	unsigned int signal;
 } Block;
 void sighandler(int num);
+void replace(char *str, char old, char new);
+void getcmds(int time);
+void getsigcmds(int signal);
+void setupsignals();
+void getstatus(char *str);
+void setroot();
+void statusloop();
+void statusinit();
+void sighandler(int signum);
+void termhandler(int signum);
+
 
 #include "blocks.h"
 
@@ -20,7 +30,7 @@ static Display *dpy;
 static int screen;
 static Window root;
 static char statusbar[LENGTH(blocks)][50] = {0};
-static char setrootcmd[256];
+static char statusstr[256];
 static char *statuscat;
 static const char *volupcmd[]  = { "volup", NULL };
 static const char *voldowncmd[]  = { "voldown", NULL };
@@ -35,7 +45,7 @@ void replace(char *str, char old, char new)
 			str[i] = new;
 }
 
-
+//opens process *cmd and stores output in *output
 void getcmd(char *cmd, char *output)
 {
 	FILE *cmdf = popen(cmd,"r");
@@ -84,12 +94,11 @@ void setupsignals()
 
 void getstatus(char *str)
 {
-	int j = 0;//15;
+	int j = 0;
 	for(int i = 0; i < 5; j+=strlen(statusbar[i++]))
 	{	
 		strcpy(str + j, statusbar[i]);
 	}
-	//for (;j < LENGTH(str);j++)
 	str[j] = '\0';
 
 }
@@ -102,16 +111,15 @@ void setroot()
 	}
 	screen = DefaultScreen(dpy);
 	root = RootWindow(dpy, screen);
-	getstatus(setrootcmd);
-	replace(setrootcmd,'\n',' ');
-	replace(setrootcmd,EOF,' ');
-	//printf("%s\n",setrootcmd);
-	XStoreName(dpy, root, setrootcmd);
+	getstatus(statusstr);
+	replace(statusstr,'\n',' ');//gets rid of newlines from output
+	replace(statusstr,EOF,' ');//gets rid of EOF from output
+	XStoreName(dpy, root, statusstr);
 	XCloseDisplay(dpy);
 }
 
 
-void *statusloop()
+void statusloop()
 {
 	setupsignals();
 	int i = 0;

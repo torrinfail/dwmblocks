@@ -7,6 +7,7 @@
 #define LENGTH(X)               (sizeof(X) / sizeof (X[0]))
 
 typedef struct {
+	char* icon;
 	char* command;
 	unsigned int interval;
 	unsigned int signal;
@@ -46,16 +47,20 @@ void replace(char *str, char old, char new)
 }
 
 //opens process *cmd and stores output in *output
-void getcmd(char *cmd, char *output)
+void getcmd(const Block *block, char *output)
 {
+	strcpy(output, block->icon);
+	char *cmd = block->command;
 	FILE *cmdf = popen(cmd,"r");
 	if (!cmdf)
 		return;
-	int N = strlen(output);
+	//int N = strlen(output);
 	char c;
-	int i = 0;
+	int i = strlen(block->icon);
 	while((c = fgetc(cmdf)) != EOF)
 		output[i++] = c;
+	if (delim != '\0' && --i)
+		output[i++] = delim;
 	output[i++] = '\0';
 	pclose(cmdf);
 }
@@ -67,7 +72,7 @@ void getcmds(int time)
 	{	
 		current = blocks + i;
 		if ((current->interval != 0 && time % current->interval == 0) || time == -1)
-			getcmd(current->command,statusbar[i]);
+			getcmd(current,statusbar[i]);
 	}
 }
 
@@ -78,7 +83,7 @@ void getsigcmds(int signal)
 	{
 		current = blocks + i;
 		if (current->signal == signal)
-			getcmd(current->command,statusbar[i]);
+			getcmd(current,statusbar[i]);
 	}
 }
 
@@ -99,7 +104,7 @@ void getstatus(char *str)
 	{	
 		strcpy(str + j, statusbar[i]);
 	}
-	str[j] = '\0';
+	str[--j] = '\0';
 
 }
 
@@ -112,8 +117,6 @@ void setroot()
 	screen = DefaultScreen(dpy);
 	root = RootWindow(dpy, screen);
 	getstatus(statusstr);
-	replace(statusstr,'\n',' ');//gets rid of newlines from output
-	replace(statusstr,EOF,' ');//gets rid of EOF from output
 	XStoreName(dpy, root, statusstr);
 	XCloseDisplay(dpy);
 }
@@ -151,8 +154,13 @@ void termhandler(int signum)
 	exit(0);
 }
 
-int main()
+int main(int argc, char** argv)
 {
+	for(int i = 0; i < argc; i++)
+	{	
+		if (!strcmp("-d",argv[i]))
+			delim = argv[++i][0];
+	}
 	signal(SIGTERM, termhandler);
 	signal(SIGINT, termhandler);
 	statusinit();

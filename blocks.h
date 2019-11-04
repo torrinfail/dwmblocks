@@ -16,5 +16,5 @@ static const Block blocks[] = {
 	{"", "~/bin/statusbar/clock",						5,		0},
 };
 
-//sets delimeter between status commands. NULL character ('\0') means no delimeter.
-static char delim = '|';
+//sets delimeter between status commands. Empty string ("") means no delimeter.
+static char* delim = "|";

@@ -56,20 +56,13 @@ void getcmd(const Block *block, char *output)
 		return;
 	//int N = strlen(output);
 	char c;
-	int sl;
-	int i = sl = strlen(block->icon);
+	int i = strlen(block->icon);
 	while((c = fgetc(cmdf)) != EOF)
 		output[i++] = c;
+	if (delim != '\0' && --i)
+		output[i++] = delim;
+	output[i++] = '\0';
 	pclose(cmdf);
-	if (i == sl) { //return empty string if command has no output
-		output[0] = '\0';
-		return;
-	}
-	if (delim[0] != '\0' && --i)
-		for (int j = 0; delim[j]; j++)
-			output[i++] = delim[j];
-	else 
-		output[--i] = '\0';
 }
 
 void getcmds(int time)
@@ -111,8 +104,7 @@ void getstatus(char *str)
 	{	
 		strcpy(str + j, statusbar[i]);
 	}
-	for (int i = 0; delim[i]; i++)
-		str[--j] = '\0';
+	str[--j] = '\0';
 
 }
 
@@ -167,7 +159,7 @@ int main(int argc, char** argv)
 	for(int i = 0; i < argc; i++)
 	{	
 		if (!strcmp("-d",argv[i]))
-			delim = argv[++i];
+			delim = argv[++i][0];
 	}
 	signal(SIGTERM, termhandler);
 	signal(SIGINT, termhandler);

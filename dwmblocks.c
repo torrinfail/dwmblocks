@@ -17,7 +17,7 @@ void replace(char *str, char old, char new);
 void getcmds(int time);
 void getsigcmds(int signal);
 void setupsignals();
-void getstatus(char *str);
+int getstatus(char *str, char *last);
 void setroot();
 void statusloop();
 void statusinit();
@@ -31,12 +31,8 @@ static Display *dpy;
 static int screen;
 static Window root;
 static char statusbar[LENGTH(blocks)][50] = {0};
-static char statusstr[256];
-static char *statuscat;
-static const char *volupcmd[]  = { "volup", NULL };
-static const char *voldowncmd[]  = { "voldown", NULL };
-static const char *volmutecmd[]  = { "volmute", NULL };
-static int statusContinue = 1,volmuted = 0;
+static char statusstr[2][256];
+static int statusContinue = 1;
 
 void replace(char *str, char old, char new)
 {
@@ -97,27 +93,29 @@ void setupsignals()
 
 }
 
-void getstatus(char *str)
+int getstatus(char *str, char *last)
 {
+	strcpy(last, str);
 	int j = 0;
 	for(int i = 0; i < LENGTH(blocks); j+=strlen(statusbar[i++]))
 	{	
 		strcpy(str + j, statusbar[i]);
 	}
 	str[--j] = '\0';
-
+	return strcmp(str, last);//0 if they are the same
 }
 
 void setroot()
 {
+	if (!getstatus(statusstr[0], statusstr[1]))//Only set root if text has changed.
+		return;
 	Display *d = XOpenDisplay(NULL);
 	if (d) {
 		dpy = d;
 	}
 	screen = DefaultScreen(dpy);
 	root = RootWindow(dpy, screen);
-	getstatus(statusstr);
-	XStoreName(dpy, root, statusstr);
+	XStoreName(dpy, root, statusstr[0]);
 	XCloseDisplay(dpy);
 }
 

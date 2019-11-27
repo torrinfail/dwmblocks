@@ -33,6 +33,10 @@ static Window root;
 static char statusbar[LENGTH(blocks)][50] = {0};
 static char statusstr[2][256];
 static int statusContinue = 1;
+<<<<<<< HEAD
+static void (*writestatus) () = setroot;
+=======
+>>>>>>> 5ff59d4e8ba9c64963d36c8ea51e7a1d644aef48
 
 void replace(char *str, char old, char new)
 {
@@ -50,7 +54,6 @@ void getcmd(const Block *block, char *output)
 	FILE *cmdf = popen(cmd,"r");
 	if (!cmdf)
 		return;
-	//int N = strlen(output);
 	char c;
 	int i = strlen(block->icon);
 	while((c = fgetc(cmdf)) != EOF)
@@ -96,12 +99,21 @@ void setupsignals()
 int getstatus(char *str, char *last)
 {
 	strcpy(last, str);
+<<<<<<< HEAD
+	str[0] = '\0';
+	for(int i = 0; i < LENGTH(blocks); i++)
+=======
 	int j = 0;
 	for(int i = 0; i < LENGTH(blocks); j+=strlen(statusbar[i++]))
+>>>>>>> 5ff59d4e8ba9c64963d36c8ea51e7a1d644aef48
 	{	
-		strcpy(str + j, statusbar[i]);
+		strcat(str, statusbar[i]);
 	}
+<<<<<<< HEAD
+	str[strlen(str)-1] = '\0';
+=======
 	str[--j] = '\0';
+>>>>>>> 5ff59d4e8ba9c64963d36c8ea51e7a1d644aef48
 	return strcmp(str, last);//0 if they are the same
 }
 
@@ -119,6 +131,14 @@ void setroot()
 	XCloseDisplay(dpy);
 }
 
+void pstdout()
+{
+	if (!getstatus(statusstr[0], statusstr[1]))//Only write out if text has changed.
+		return;
+	printf("%s\n",statusstr[0]);
+	fflush(stdout);
+}
+
 
 void statusloop()
 {
@@ -128,7 +148,7 @@ void statusloop()
 	while(statusContinue)
 	{
 		getcmds(i);
-		setroot();
+		writestatus();
 		sleep(1.0);
 		i++;
 	}
@@ -143,7 +163,7 @@ void statusinit()
 void sighandler(int signum)
 {
 	getsigcmds(signum-SIGRTMIN);
-	setroot();
+	writestatus();
 }
 
 void termhandler(int signum)
@@ -158,6 +178,8 @@ int main(int argc, char** argv)
 	{	
 		if (!strcmp("-d",argv[i]))
 			delim = argv[++i][0];
+		else if(!strcmp("-p",argv[i]))
+			writestatus = pstdout;
 	}
 	signal(SIGTERM, termhandler);
 	signal(SIGINT, termhandler);

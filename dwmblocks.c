@@ -33,10 +33,7 @@ static Window root;
 static char statusbar[LENGTH(blocks)][50] = {0};
 static char statusstr[2][256];
 static int statusContinue = 1;
-<<<<<<< HEAD
 static void (*writestatus) () = setroot;
-=======
->>>>>>> 5ff59d4e8ba9c64963d36c8ea51e7a1d644aef48
 
 void replace(char *str, char old, char new)
 {
@@ -99,21 +96,12 @@ void setupsignals()
 int getstatus(char *str, char *last)
 {
 	strcpy(last, str);
-<<<<<<< HEAD
 	str[0] = '\0';
 	for(int i = 0; i < LENGTH(blocks); i++)
-=======
-	int j = 0;
-	for(int i = 0; i < LENGTH(blocks); j+=strlen(statusbar[i++]))
->>>>>>> 5ff59d4e8ba9c64963d36c8ea51e7a1d644aef48
 	{	
 		strcat(str, statusbar[i]);
 	}
-<<<<<<< HEAD
 	str[strlen(str)-1] = '\0';
-=======
-	str[--j] = '\0';
->>>>>>> 5ff59d4e8ba9c64963d36c8ea51e7a1d644aef48
 	return strcmp(str, last);//0 if they are the same
 }
 

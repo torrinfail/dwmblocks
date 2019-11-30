@@ -5,6 +5,7 @@
 #include<signal.h>
 #include<X11/Xlib.h>
 #define LENGTH(X)               (sizeof(X) / sizeof (X[0]))
+#define CMDLENGTH		50
 
 typedef struct {
 	char* icon;
@@ -20,7 +21,6 @@ void setupsignals();
 int getstatus(char *str, char *last);
 void setroot();
 void statusloop();
-void statusinit();
 void sighandler(int signum);
 void termhandler(int signum);
 
@@ -30,7 +30,7 @@ void termhandler(int signum);
 static Display *dpy;
 static int screen;
 static Window root;
-static char statusbar[LENGTH(blocks)][50] = {0};
+static char statusbar[LENGTH(blocks)][CMDLENGTH] = {0};
 static char statusstr[2][256];
 static int statusContinue = 1;
 static void (*writestatus) () = setroot;
@@ -53,12 +53,8 @@ void getcmd(const Block *block, char *output)
 		return;
 	char c;
 	int i = strlen(block->icon);
-	while((c = fgetc(cmdf)) != EOF)
-	{
-		output[i++] = c;
-		if(c == '\n')
-			break;
-	}
+	fgets(output+i, CMDLENGTH-i, cmdf);
+	i = strlen(output);
 	if (delim != '\0' && --i)
 		output[i++] = delim;
 	output[i++] = '\0';
@@ -102,9 +98,7 @@ int getstatus(char *str, char *last)
 	strcpy(last, str);
 	str[0] = '\0';
 	for(int i = 0; i < LENGTH(blocks); i++)
-	{	
 		strcat(str, statusbar[i]);
-	}
 	str[strlen(str)-1] = '\0';
 	return strcmp(str, last);//0 if they are the same
 }
@@ -146,11 +140,6 @@ void statusloop()
 	}
 }
 
-void statusinit()
-{
-	statusloop();
-}
-
 
 void sighandler(int signum)
 {
@@ -175,5 +164,5 @@ int main(int argc, char** argv)
 	}
 	signal(SIGTERM, termhandler);
 	signal(SIGINT, termhandler);
-	statusinit();
+	statusloop();
 }

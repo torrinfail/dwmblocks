@@ -54,7 +54,11 @@ void getcmd(const Block *block, char *output)
 	char c;
 	int i = strlen(block->icon);
 	while((c = fgetc(cmdf)) != EOF)
+	{
 		output[i++] = c;
+		if(c == '\n')
+			break;
+	}
 	if (delim != '\0' && --i)
 		output[i++] = delim;
 	output[i++] = '\0';

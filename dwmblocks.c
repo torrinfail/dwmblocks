@@ -16,12 +16,14 @@ typedef struct {
 void sighandler(int num);
 void replace(char *str, char old, char new);
 void getcmds(int time);
+#ifndef __OpenBSD__
 void getsigcmds(int signal);
 void setupsignals();
+void sighandler(int signum);
+#endif
 int getstatus(char *str, char *last);
 void setroot();
 void statusloop();
-void sighandler(int signum);
 void termhandler(int signum);
 
 
@@ -72,6 +74,7 @@ void getcmds(int time)
 	}
 }
 
+#ifndef __OpenBSD__
 void getsigcmds(int signal)
 {
 	const Block *current;
@@ -92,6 +95,7 @@ void setupsignals()
 	}
 
 }
+#endif
 
 int getstatus(char *str, char *last)
 {
@@ -128,7 +132,9 @@ void pstdout()
 
 void statusloop()
 {
+#ifndef __OpenBSD__
 	setupsignals();
+#endif
 	int i = 0;
 	getcmds(-1);
 	while(statusContinue)
@@ -140,12 +146,13 @@ void statusloop()
 	}
 }
 
-
+#ifndef __OpenBSD__
 void sighandler(int signum)
 {
 	getsigcmds(signum-SIGRTMIN);
 	writestatus();
 }
+#endif
 
 void termhandler(int signum)
 {

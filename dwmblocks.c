@@ -65,10 +65,10 @@ void getcmd(const Block *block, CommandBuffer* output)
 
 	output->count += fread(output->data + output->count, 1, LENGTH(output->data) - output->count, cmdf);
 
-	if(output->data[output->count - 1] == '\n')
-	{ --output->count; }
-
 	pclose(cmdf);
+
+	if(output->count > 0 && output->data[output->count - 1] == '\n')
+	{ --output->count; }
 }
 
 void getcmds(int time)
@@ -97,7 +97,7 @@ void getsigcmds(int signal)
 void setupsignals()
 {
 	for(size_t i = 0; i < LENGTH(blocks); i++)
-	{	  
+	{
 		if (blocks[i].signal > 0)
 			signal(SIGRTMIN+blocks[i].signal, sighandler);
 	}
@@ -116,7 +116,7 @@ int getstatus()
 	{
 		if(statusstr.count + statusbar[i].count + 1 > STRLEN(statusstr.data))
 		{
-			char error[] = "error: status string is too long to be stored in the buffer";
+			char error[] = "error: status is too long to be stored in the buffer";
 			memcpy(statusstr.data, error, MIN(STRLEN(statusstr.data), STRLEN(error)));
 			statusstr.count = MIN(STRLEN(statusstr.data), STRLEN(error));
 			break;

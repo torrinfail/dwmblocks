@@ -3,5 +3,5 @@ output: dwmblocks.c blocks.h
 clean:
 	rm -f *.o *.gch dwmblocks
 install: output
-	mkdir -p ~/.local/bin/desktop/
-	cp -f dwmblocks ~/.local/bin/desktop/
+	mkdir -p /usr/local/bin
+	cp -f dwmblocks /usr/local/bin

@@ -131,7 +131,7 @@ int getstatus()
 		buffer_append(&statusstr, &statusbar[i]);
 	}
 
-	statusstr.data[statusstr.count++] = '\0';
+	statusstr.data[statusstr.count] = '\0';
 
 	return buffer_eq(&statusstr, &old);
 }

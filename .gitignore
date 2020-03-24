@@ -37,6 +37,9 @@
 *.hex
 dwmblocks
 
+# Local Configuration
+blocks.h
+
 # Debug files
 *.dSYM/
 *.su

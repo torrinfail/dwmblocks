@@ -27,6 +27,7 @@ static int getstatus();
 static void setroot();
 static void statusloop();
 static void termhandler(int signum);
+static void refreshhandler(int signum);
 
 #include "blocks.h"
 #include "buffer.h"
@@ -103,6 +104,13 @@ void getsigcmds(int signal)
 	}
 }
 
+void refreshhandler(int signum)
+{
+	(void)signum;
+	getcmds(-1);
+	writestatus();
+}
+
 void setupsignals()
 {
 	for(size_t i = 0; i < LENGTH(blocks); i++)
@@ -111,6 +119,7 @@ void setupsignals()
 			signal(SIGRTMIN+blocks[i].signal, sighandler);
 	}
 
+	signal(SIGRTMIN, refreshhandler);
 }
 #endif
 

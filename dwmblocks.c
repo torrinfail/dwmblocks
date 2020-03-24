@@ -42,21 +42,24 @@ static StatusBuffer statusstr;
 static int statusContinue = 1;
 static void (*writestatus) () = setroot;
 
-static char* str_copy(char* dest, char const* src)
+static size_t str_copy(char* dest, char const* src)
 {
+	char* first = dest;
+
 	while(*src != '\0')
 	{
 		*dest = *src;
 		++dest;
 		++src;
 	}
-	return dest;
+
+	return dest - first;
 }
 
 //opens process *block->command and stores output in *output
 void getcmd(const Block *block, CommandBuffer* output)
 {
-	output->count = str_copy(output->data, block->icon) - output->data;
+	output->count = str_copy(output->data, block->icon);
 
 	FILE *cmdf = popen(block->command, "r");
 

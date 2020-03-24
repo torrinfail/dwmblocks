@@ -59,7 +59,7 @@ static size_t str_copy(char* dest, char const* src)
 //opens process *block->command and stores output in *output
 void getcmd(const Block *block, CommandBuffer* output)
 {
-	output->count = str_copy(output->data, block->icon);
+	size_t icon_length = output->count = str_copy(output->data, block->icon);
 
 	FILE *cmdf = popen(block->command, "r");
 
@@ -72,6 +72,12 @@ void getcmd(const Block *block, CommandBuffer* output)
 
 	if(output->count > 0 && output->data[output->count - 1] == '\n')
 	{ --output->count; }
+
+	if(output->count == icon_length)
+	{
+		output->count = 0;
+		return;
+	}
 }
 
 void getcmds(int time)
@@ -113,9 +119,13 @@ int getstatus()
 	StatusBuffer old;
 	buffer_copy(&old, &statusstr);
 
-	buffer_copy(&statusstr, &statusbar[0]);
+	size_t i = 0;
 
-	for(size_t i = 1; i < LENGTH(blocks); ++i)
+	for(; i < LENGTH(blocks) && statusbar[i].count == 0; ++i);
+
+	buffer_copy(&statusstr, &statusbar[i++]);
+
+	for(; i < LENGTH(blocks); ++i)
 	{
 		if(statusstr.count + statusbar[i].count + 1 > STRLEN(statusstr.data))
 		{

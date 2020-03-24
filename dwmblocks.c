@@ -128,30 +128,26 @@ int getstatus()
 	StatusBuffer old;
 	buffer_copy(&old, &statusstr);
 
-	size_t i = 0;
+	buffer_copy_str(&statusstr, left_delim, STRLEN(left_delim));
 
-	for(; i < LENGTH(blocks) && statusbar[i].count == 0; ++i);
-
-	buffer_copy(&statusstr, &statusbar[i++]);
-
-	for(; i < LENGTH(blocks); ++i)
+	for(size_t i = 0; i < LENGTH(blocks); ++i)
 	{
-		if(statusstr.count + statusbar[i].count + 1 > STRLEN(statusstr.data))
+		if(statusstr.count + statusbar[i].count + STRLEN(delim) + STRLEN(left_delim) + STRLEN(right_delim) > STRLEN(statusstr.data))
 		{
 			char error[] = "error: status is too long to be stored in the buffer";
-			memcpy(statusstr.data, error, MIN(STRLEN(statusstr.data), STRLEN(error)));
-			statusstr.count = MIN(STRLEN(statusstr.data), STRLEN(error));
-			break;
+			buffer_copy_str(&statusstr, error, MIN(STRLEN(statusstr.data), STRLEN(error)));
+			goto done;
 		}
 
-		if(delim != '\0' && statusbar[i].count > 0)
-		{ statusstr.data[statusstr.count++] = delim; }
+		if(i != 0 && statusbar[i].count > 0)
+		{ buffer_append_str(&statusstr, delim, STRLEN(delim)); }
 
 		buffer_append(&statusstr, &statusbar[i]);
 	}
 
-	statusstr.data[statusstr.count] = '\0';
+	buffer_append_str(&statusstr, right_delim, STRLEN(right_delim));
 
+done:
 	return buffer_eq(&statusstr, &old);
 }
 
@@ -159,6 +155,9 @@ void setroot()
 {
 	if (getstatus())//Only set root if text has changed.
 		return;
+
+	statusstr.data[statusstr.count] = '\0';
+
 	Display *d = XOpenDisplay(NULL);
 	if (d) {
 		dpy = d;
@@ -173,7 +172,9 @@ void pstdout()
 {
 	if (getstatus())//Only write out if text has changed.
 		return;
-	printf("%s\n", statusstr.data);
+
+	fwrite(statusstr.data, 1, statusstr.count, stdout);
+	putchar('\n');
 	fflush(stdout);
 }
 
@@ -212,9 +213,7 @@ int main(int argc, char** argv)
 {
 	for(int i = 0; i < argc; i++)
 	{	
-		if (!strcmp("-d",argv[i]))
-			delim = argv[++i][0];
-		else if(!strcmp("-p",argv[i]))
+		if(!strcmp("-p",argv[i]))
 			writestatus = pstdout;
 	}
 	signal(SIGTERM, termhandler);

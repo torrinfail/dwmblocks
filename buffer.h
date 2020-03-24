@@ -26,12 +26,32 @@
 	__x;\
 })
 
+#define buffer_copy_str(X, S, L)\
+({\
+	typeof(X) __x = (X);\
+	char const* __s = (S);\
+	size_t __l = (L);\
+	memcpy(__x->data, __s, __l);\
+	__x->count = __l;\
+	__x;\
+})
+
 #define buffer_append(X, Y)\
 ({\
 	typeof(X) __x = (X);\
 	typeof(Y) __y = (Y);\
 	memcpy(__x->data + __x->count, __y->data, __y->count);\
 	__x->count += __y->count;\
+	__x;\
+})
+
+#define buffer_append_str(X, S, L)\
+({\
+	typeof(X) __x = (X);\
+	char const* __s = (S);\
+	size_t __l = (L);\
+	memcpy(__x->data + __x->count, __s, __l);\
+	__x->count += __l;\
 	__x;\
 })
 

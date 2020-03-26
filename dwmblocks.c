@@ -130,7 +130,15 @@ int getstatus()
 
 	buffer_copy_str(&statusstr, left_delim, STRLEN(left_delim));
 
-	for(size_t i = 0; i < LENGTH(blocks); ++i)
+	size_t i = 0;
+
+	// find the first non-empty block
+	for(; i < LENGTH(blocks) && statusbar[i].count == 0; ++i);
+
+	if(i < LENGTH(blocks))
+	{ buffer_append(&statusstr, &statusbar[i++]); }
+
+	for(; i < LENGTH(blocks); ++i)
 	{
 		if(statusstr.count + statusbar[i].count + STRLEN(delim) + STRLEN(left_delim) + STRLEN(right_delim) > STRLEN(statusstr.data))
 		{
@@ -139,7 +147,7 @@ int getstatus()
 			goto done;
 		}
 
-		if(i != 0 && statusbar[i].count > 0)
+		if(statusbar[i].count > 0)
 		{ buffer_append_str(&statusstr, delim, STRLEN(delim)); }
 
 		buffer_append(&statusstr, &statusbar[i]);

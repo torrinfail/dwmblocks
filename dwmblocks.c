@@ -13,6 +13,7 @@ typedef struct {
 	unsigned int interval;
 	unsigned int signal;
 } Block;
+void dummysighandler(int num);
 void sighandler(int num);
 void replace(char *str, char old, char new);
 void getcmds(int time);
@@ -67,7 +68,7 @@ void getcmds(int time)
 {
 	const Block* current;
 	for(int i = 0; i < LENGTH(blocks); i++)
-	{	
+	{
 		current = blocks + i;
 		if ((current->interval != 0 && time % current->interval == 0) || time == -1)
 			getcmd(current,statusbar[i]);
@@ -88,8 +89,12 @@ void getsigcmds(int signal)
 
 void setupsignals()
 {
+    /* initialize all real time signals with dummy handler */
+    for(int i = SIGRTMIN; i <= SIGRTMAX; i++)
+        signal(i, dummysighandler);
+
 	for(int i = 0; i < LENGTH(blocks); i++)
-	{	  
+	{
 		if (blocks[i].signal > 0)
 			signal(SIGRTMIN+blocks[i].signal, sighandler);
 	}
@@ -147,6 +152,14 @@ void statusloop()
 }
 
 #ifndef __OpenBSD__
+/* this signal handler should do nothing */
+void dummysighandler(int signum)
+{
+    return;
+}
+#endif
+
+#ifndef __OpenBSD__
 void sighandler(int signum)
 {
 	getsigcmds(signum-SIGRTMIN);
@@ -163,7 +176,7 @@ void termhandler(int signum)
 int main(int argc, char** argv)
 {
 	for(int i = 0; i < argc; i++)
-	{	
+	{
 		if (!strcmp("-d",argv[i]))
 			delim = argv[++i][0];
 		else if(!strcmp("-p",argv[i]))

@@ -4,7 +4,6 @@
 #include<unistd.h>
 #include<signal.h>
 #include<X11/Xlib.h>
-#define LENGTH(X)               (sizeof(X) / sizeof (X[0]))
 #define STRLEN(X) (sizeof(X) - 1)
 #define CMDLENGTH		50
 #define STATUSLENGTH 256
@@ -32,8 +31,8 @@ static void termhandler(int signum);
 #include "blocks.h"
 #include "buffer.h"
 
-typedef BUFFER(CMDLENGTH) CommandBuffer;
-typedef BUFFER(STATUSLENGTH) StatusBuffer;
+typedef BUFFER(char, CMDLENGTH) CommandBuffer;
+typedef BUFFER(char, STATUSLENGTH) StatusBuffer;
 
 static Display *dpy;
 static int screen;
@@ -43,31 +42,17 @@ static StatusBuffer statusstr;
 static int statusContinue = 1;
 static void (*writestatus) () = setroot;
 
-static size_t str_copy(char* dest, char const* src)
-{
-	char* first = dest;
-
-	while(*src != '\0')
-	{
-		*dest = *src;
-		++dest;
-		++src;
-	}
-
-	return dest - first;
-}
-
 //opens process *block->command and stores output in *output
 void getcmd(const Block *block, CommandBuffer* output)
 {
-	size_t icon_length = output->count = str_copy(output->data, block->icon);
+	size_t icon_length = buffer_copy_str(output, block->icon)->count;
 
 	FILE *cmdf = popen(block->command, "r");
 
 	if (!cmdf)
 	{ return; }
 
-	output->count += fread(output->data + output->count, 1, LENGTH(output->data) - output->count, cmdf);
+	buffer_read_append(output, cmdf);
 
 	pclose(cmdf);
 
@@ -128,7 +113,7 @@ int getstatus()
 	StatusBuffer old;
 	buffer_copy(&old, &statusstr);
 
-	buffer_copy_str(&statusstr, left_delim, STRLEN(left_delim));
+	buffer_copy_chrarr(&statusstr, left_delim);
 
 	size_t i = 0;
 
@@ -142,18 +127,19 @@ int getstatus()
 	{
 		if(statusstr.count + statusbar[i].count + STRLEN(delim) + STRLEN(left_delim) + STRLEN(right_delim) > STRLEN(statusstr.data))
 		{
-			char error[] = "error: status is too long to be stored in the buffer";
-			buffer_copy_str(&statusstr, error, MIN(STRLEN(statusstr.data), STRLEN(error)));
+			buffer_copy_chrarr(&statusstr,
+					"error: status is too long to be stored in the buffer");
 			goto done;
 		}
 
 		if(statusbar[i].count > 0)
-		{ buffer_append_str(&statusstr, delim, STRLEN(delim)); }
-
-		buffer_append(&statusstr, &statusbar[i]);
+		{
+			buffer_append_chrarr(&statusstr, delim);
+			buffer_append(&statusstr, &statusbar[i]);
+		}
 	}
 
-	buffer_append_str(&statusstr, right_delim, STRLEN(right_delim));
+	buffer_append_chrarr(&statusstr, right_delim);
 
 done:
 	return buffer_eq(&statusstr, &old);

@@ -22,12 +22,12 @@ static void getcmds(int time);
 static void getsigcmds(int signal);
 static void setupsignals();
 static void sighandler(int signum);
+static void refreshhandler(int signum);
 #endif
 static int getstatus();
 static void setroot();
 static void statusloop();
 static void termhandler(int signum);
-static void refreshhandler(int signum);
 
 #include "blocks.h"
 #include "buffer.h"

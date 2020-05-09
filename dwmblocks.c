@@ -41,7 +41,8 @@ static Display *dpy;
 static int screen;
 static Window root;
 static CommandBuffer statusbar[LENGTH(blocks)];
-static StatusBuffer statusstr;
+static StatusBuffer statusstrs[2];
+static StatusBuffer* statusstr = &statusstrs[0];
 static int statusContinue = 1;
 static void (*writestatus) () = setroot;
 
@@ -113,10 +114,10 @@ void setupsignals()
 
 int getstatus()
 {
-	StatusBuffer old;
-	buffer_copy(&old, &statusstr);
+	// change the active status buffer
+	statusstr = statusstr == &statusstrs[0] ? &statusstrs[1] : &statusstrs[0];
 
-	buffer_copy_chrarr(&statusstr, left_delim);
+	buffer_copy_chrarr(statusstr, left_delim);
 
 	size_t i = 0;
 
@@ -124,28 +125,27 @@ int getstatus()
 	for(; i < LENGTH(blocks) && statusbar[i].count == 0; ++i);
 
 	if(i < LENGTH(blocks))
-	{ buffer_append(&statusstr, &statusbar[i++]); }
+	{ buffer_append(statusstr, &statusbar[i++]); }
 
 	for(; i < LENGTH(blocks); ++i)
 	{
-		if(statusstr.count + statusbar[i].count + STRLEN(delim) + STRLEN(right_delim) > STRLEN(statusstr.data))
+		if(statusstr->count + statusbar[i].count + STRLEN(delim) + STRLEN(right_delim) > STRLEN(statusstr->data))
 		{
-			buffer_copy_chrarr(&statusstr,
-					"error: status is too long to be stored in the buffer");
+			buffer_copy_chrarr(statusstr, "error: status is too long to be stored in the buffer");
 			goto done;
 		}
 
 		if(statusbar[i].count > 0)
 		{
-			buffer_append_chrarr(&statusstr, delim);
-			buffer_append(&statusstr, &statusbar[i]);
+			buffer_append_chrarr(statusstr, delim);
+			buffer_append(statusstr, &statusbar[i]);
 		}
 	}
 
-	buffer_append_chrarr(&statusstr, right_delim);
+	buffer_append_chrarr(statusstr, right_delim);
 
 done:
-	return buffer_eq(&statusstr, &old);
+	return buffer_eq(&statusstrs[0], &statusstrs[1]);
 }
 
 void setroot()
@@ -153,7 +153,7 @@ void setroot()
 	if (getstatus())//Only set root if text has changed.
 		return;
 
-	statusstr.data[statusstr.count] = '\0';
+	statusstr->data[statusstr->count] = '\0';
 
 	Display *d = XOpenDisplay(NULL);
 	if (d) {
@@ -161,7 +161,7 @@ void setroot()
 	}
 	screen = DefaultScreen(dpy);
 	root = RootWindow(dpy, screen);
-	XStoreName(dpy, root, statusstr.data);
+	XStoreName(dpy, root, statusstr->data);
 	XCloseDisplay(dpy);
 }
 
@@ -170,7 +170,7 @@ void pstdout()
 	if (getstatus())//Only write out if text has changed.
 		return;
 
-	fwrite(statusstr.data, 1, statusstr.count, stdout);
+	buffer_write(statusstr, stdout);
 	putchar('\n');
 	fflush(stdout);
 }

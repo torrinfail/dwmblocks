@@ -21,6 +21,9 @@ typedef struct {
 // make sure there is enough space for at least one block
 static_assert(STATUSLENGTH >= CMDLENGTH + STRLEN(left_delim) + STRLEN(right_delim));
 
+typedef BUFFER(char, CMDLENGTH) CommandBuffer;
+typedef BUFFER(char, STATUSLENGTH + 1) StatusBuffer;
+
 static void sighandler(int num);
 static void getcmds(int time);
 #ifndef __OpenBSD__
@@ -33,9 +36,6 @@ static int getstatus();
 static void setroot();
 static void statusloop();
 static void termhandler(int signum);
-
-typedef BUFFER(char, CMDLENGTH) CommandBuffer;
-typedef BUFFER(char, STATUSLENGTH) StatusBuffer;
 
 static Display *dpy;
 static int screen;
@@ -129,7 +129,7 @@ int getstatus()
 
 	for(; i < LENGTH(blocks); ++i)
 	{
-		if(statusstr->count + statusbar[i].count + STRLEN(delim) + STRLEN(right_delim) > STRLEN(statusstr->data))
+		if(statusstr->count + statusbar[i].count + STRLEN(delim) + STRLEN(right_delim) > STATUSLENGTH)
 		{
 			buffer_copy_chrarr(statusstr, "error: status is too long to be stored in the buffer");
 			goto done;

@@ -4,10 +4,6 @@
 #include<unistd.h>
 #include<signal.h>
 #include<X11/Xlib.h>
-#define STRLEN(X) (sizeof(X) - 1)
-#define CMDLENGTH		50
-#define STATUSLENGTH 256
-#define MIN(X, Y) ({ typeof(X) __x = (X); typeof(Y) __y = (Y); __x > __y ? __y : __x; })
 
 typedef struct {
 	char* icon;
@@ -15,6 +11,16 @@ typedef struct {
 	unsigned int interval;
 	int signal;
 } Block;
+
+#include "blocks.h"
+#include "buffer.h"
+
+#define STRLEN(X)    (sizeof(X) - 1)
+#define CMDLENGTH    50
+#define STATUSLENGTH 256
+// make sure there is enough space for at least one block
+static_assert(STATUSLENGTH >= CMDLENGTH + STRLEN(left_delim) + STRLEN(right_delim));
+
 static void sighandler(int num);
 static void getcmds(int time);
 #ifndef __OpenBSD__
@@ -27,9 +33,6 @@ static int getstatus();
 static void setroot();
 static void statusloop();
 static void termhandler(int signum);
-
-#include "blocks.h"
-#include "buffer.h"
 
 typedef BUFFER(char, CMDLENGTH) CommandBuffer;
 typedef BUFFER(char, STATUSLENGTH) StatusBuffer;
@@ -125,7 +128,7 @@ int getstatus()
 
 	for(; i < LENGTH(blocks); ++i)
 	{
-		if(statusstr.count + statusbar[i].count + STRLEN(delim) + STRLEN(left_delim) + STRLEN(right_delim) > STRLEN(statusstr.data))
+		if(statusstr.count + statusbar[i].count + STRLEN(delim) + STRLEN(right_delim) > STRLEN(statusstr.data))
 		{
 			buffer_copy_chrarr(&statusstr,
 					"error: status is too long to be stored in the buffer");

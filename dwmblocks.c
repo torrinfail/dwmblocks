@@ -24,10 +24,9 @@ static_assert(STATUSLENGTH >= CMDLENGTH + STRLEN(left_delim) + STRLEN(right_deli
 typedef BUFFER(char, CMDLENGTH) CommandBuffer;
 typedef BUFFER(char, STATUSLENGTH + 1) StatusBuffer;
 
-static void sighandler(int num);
 static void getcmds(int time);
 #ifndef __OpenBSD__
-static void getsigcmds(int signal);
+static void getsigcmds(int signum);
 static void setupsignals();
 static void sighandler(int signum);
 static void refreshhandler(int signum);
@@ -82,13 +81,13 @@ void getcmds(int time)
 }
 
 #ifndef __OpenBSD__
-void getsigcmds(int signal)
+void getsigcmds(int signum)
 {
 	const Block *current;
 	for(size_t i = 0; i < LENGTH(blocks); i++)
 	{
 		current = blocks + i;
-		if (current->signal == signal)
+		if (current->signal == signum)
 			getcmd(current, statusbar + i);
 	}
 }

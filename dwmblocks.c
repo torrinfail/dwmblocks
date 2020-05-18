@@ -10,6 +10,7 @@
 typedef struct {
 	char* icon;
 	char* command;
+	char* poststr;
 	unsigned int interval;
 	unsigned int signal;
 } Block;
@@ -48,8 +49,13 @@ void getcmd(const Block *block, char *output)
 	int i = strlen(block->icon);
 	fgets(output+i, CMDLENGTH-i, cmdf);
 	i = strlen(output);
-	if (delim != '\0' && --i)
-		output[i++] = delim;
+	if (--i)
+	{
+	    strcpy(output+i, block->poststr);
+	    i = strlen(output);
+	    if (delim != '\0')
+		    output[i++] = delim;
+	}
 	output[i++] = '\0';
 	pclose(cmdf);
 }

@@ -12,7 +12,7 @@ blocks.h: blocks.def.h
 	cp blocks.def.h blocks.h
 
 clean:
-	rm -f *.o *.gch dwmblocks
+	rm -f *.o *.gch dwmblocks dwmblocks-*-any.pkg.tar.xz
 
 install: dwmblocks
 	mkdir -p ${DESTDIR}${PREFIX}/bin

@@ -4,6 +4,9 @@ blocks.h
 # Dependencies
 buffer
 
+# Other
+dwmblocks-*-any.pkg.tar.xz
+
 # Prerequisites
 *.d
 

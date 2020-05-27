@@ -1,28 +1,42 @@
-#include<stdlib.h>
 #include<stdio.h>
-#include<string.h>
 #include<unistd.h>
 #include<signal.h>
 #include<X11/Xlib.h>
 
-typedef struct {
-	char* icon;
-	char* command;
+#include "buffer.h"
+
+#define STRLEN(X) (sizeof(X) - 1)
+#define LENGTH(X) (sizeof(X) / sizeof((X)[0]))
+
+typedef struct
+{
+	char const*  icon;
+	char const*  command;
 	unsigned int interval;
-	int signal;
+	int          signal;
 } Block;
 
 #include "blocks.h"
-#include "buffer.h"
+static_assert(LENGTH(blocks) > 0, "there must be at least one block");
 
-#define STRLEN(X)    (sizeof(X) - 1)
 #define CMDLENGTH    50
 #define STATUSLENGTH (LENGTH(blocks) * CMDLENGTH + STRLEN(left_delim) + STRLEN(right_delim) + (LENGTH(blocks) - 1) * STRLEN(delim))
-static_assert(LENGTH(blocks) > 0, "there must be at least one block");
 
 typedef BUFFER(char, CMDLENGTH) CommandBuffer;
 typedef BUFFER(char, STATUSLENGTH + 1) StatusBuffer;
 
+static CommandBuffer statusbar[LENGTH(blocks)];
+static StatusBuffer  statusstrs[2] = { { .count = 0 }, { .count = 0 } };
+static StatusBuffer* statusstr = &statusstrs[0];
+
+static int statusContinue = 1;
+
+static void statusloop();
+static int  getstatus();
+static void setroot();
+static void pstdout();
+static void (*writestatus) () = setroot;
+static void getcmd(Block const* block, CommandBuffer* output);
 static void getcmds(int time);
 #ifndef __OpenBSD__
 static void getsigcmds(int signum);
@@ -30,28 +44,16 @@ static void setupsignals();
 static void sighandler(int signum);
 static void refreshhandler(int signum);
 #endif
-static int getstatus();
-static void setroot();
-static void statusloop();
 static void termhandler(int signum);
 
-static Display *dpy;
-static int screen;
-static Window root;
-static CommandBuffer statusbar[LENGTH(blocks)];
-static StatusBuffer statusstrs[2];
-static StatusBuffer* statusstr = &statusstrs[0];
-static int statusContinue = 1;
-static void (*writestatus) () = setroot;
-
 //opens process *block->command and stores output in *output
-void getcmd(const Block *block, CommandBuffer* output)
+void getcmd(Block const* block, CommandBuffer* output)
 {
 	size_t icon_length = buffer_copy_str(output, block->icon)->count;
 
 	FILE *cmdf = popen(block->command, "r");
 
-	if (!cmdf)
+	if(! cmdf)
 	{ return; }
 
 	buffer_read_append(output, cmdf);
@@ -62,19 +64,16 @@ void getcmd(const Block *block, CommandBuffer* output)
 	{ --output->count; }
 
 	if(output->count == icon_length)
-	{
-		output->count = 0;
-		return;
-	}
+	{ output->count = 0; }
 }
 
 void getcmds(int time)
 {
-	const Block* current;
-	for(size_t i = 0; i < LENGTH(blocks); i++)
+	for(size_t i = 0; i < LENGTH(blocks); ++i)
 	{	
-		current = blocks + i;
-		if ((current->interval != 0 && time % current->interval == 0) || time == -1)
+		Block const* current = blocks + i;
+
+		if((current->interval != 0 && time % current->interval == 0) || time == -1)
 		{ getcmd(current, statusbar + i); }
 	}
 }
@@ -82,12 +81,12 @@ void getcmds(int time)
 #ifndef __OpenBSD__
 void getsigcmds(int signum)
 {
-	const Block *current;
-	for(size_t i = 0; i < LENGTH(blocks); i++)
+	for(size_t i = 0; i < LENGTH(blocks); ++i)
 	{
-		current = blocks + i;
-		if (current->signal == signum)
-			getcmd(current, statusbar + i);
+		Block const* current = blocks + i;
+
+		if(current->signal == signum)
+		{ getcmd(current, statusbar + i); }
 	}
 }
 
@@ -98,12 +97,18 @@ void refreshhandler(int signum)
 	writestatus();
 }
 
+void sighandler(int signum)
+{
+	getsigcmds(signum-SIGRTMIN);
+	writestatus();
+}
+
 void setupsignals()
 {
-	for(size_t i = 0; i < LENGTH(blocks); i++)
+	for(size_t i = 0; i < LENGTH(blocks); ++i)
 	{
-		if (blocks[i].signal > 0)
-			signal(SIGRTMIN+blocks[i].signal, sighandler);
+		if(blocks[i].signal > 0)
+		{ signal(SIGRTMIN+blocks[i].signal, sighandler); }
 	}
 
 	signal(SIGRTMIN, refreshhandler);
@@ -141,25 +146,23 @@ int getstatus()
 
 void setroot()
 {
-	if (getstatus())//Only set root if text has changed.
-		return;
+	if(getstatus()) // Only write out if text has changed.
+	{ return; }
 
 	statusstr->data[statusstr->count] = '\0';
 
-	Display *d = XOpenDisplay(NULL);
-	if (d) {
-		dpy = d;
-	}
-	screen = DefaultScreen(dpy);
-	root = RootWindow(dpy, screen);
+	Display* dpy    = XOpenDisplay(NULL);
+	int      screen = DefaultScreen(dpy);
+	Window   root   = RootWindow(dpy, screen);
+
 	XStoreName(dpy, root, statusstr->data);
 	XCloseDisplay(dpy);
 }
 
 void pstdout()
 {
-	if (getstatus())//Only write out if text has changed.
-		return;
+	if(getstatus()) // Only write out if text has changed.
+	{ return; }
 
 	buffer_write(statusstr, stdout);
 	putchar('\n');
@@ -168,27 +171,13 @@ void pstdout()
 
 void statusloop()
 {
-#ifndef __OpenBSD__
-	setupsignals();
-#endif
-	int i = 0;
-	getcmds(-1);
-	while(statusContinue)
+	for(int i = -1; statusContinue; ++i)
 	{
 		getcmds(i);
 		writestatus();
 		sleep(1.0);
-		i++;
 	}
 }
-
-#ifndef __OpenBSD__
-void sighandler(int signum)
-{
-	getsigcmds(signum-SIGRTMIN);
-	writestatus();
-}
-#endif
 
 void termhandler(int signum)
 {
@@ -198,12 +187,16 @@ void termhandler(int signum)
 
 int main(int argc, char** argv)
 {
-	for(int i = 0; i < argc; i++)
+	for(int i = 0; i < argc; ++i)
 	{	
-		if(!strcmp("-p",argv[i]))
-			writestatus = pstdout;
+		if(! strcmp("-p", argv[i]))
+		{ writestatus = pstdout; }
 	}
+
 	signal(SIGTERM, termhandler);
 	signal(SIGINT, termhandler);
+#ifndef __OpenBSD__
+	setupsignals();
+#endif
 	statusloop();
 }

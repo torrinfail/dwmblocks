@@ -17,9 +17,8 @@ typedef struct {
 
 #define STRLEN(X)    (sizeof(X) - 1)
 #define CMDLENGTH    50
-#define STATUSLENGTH 256
-// make sure there is enough space for at least one block
-static_assert(STATUSLENGTH >= CMDLENGTH + STRLEN(left_delim) + STRLEN(right_delim));
+#define STATUSLENGTH (LENGTH(blocks) * CMDLENGTH + STRLEN(left_delim) + STRLEN(right_delim) + (LENGTH(blocks) - 1) * STRLEN(delim))
+static_assert(LENGTH(blocks) > 0, "there must be at least one block");
 
 typedef BUFFER(char, CMDLENGTH) CommandBuffer;
 typedef BUFFER(char, STATUSLENGTH + 1) StatusBuffer;
@@ -128,12 +127,6 @@ int getstatus()
 
 	for(; i < LENGTH(blocks); ++i)
 	{
-		if(statusstr->count + statusbar[i].count + STRLEN(delim) + STRLEN(right_delim) > STATUSLENGTH)
-		{
-			buffer_copy_chrarr(statusstr, "error: status is too long to be stored in the buffer");
-			goto done;
-		}
-
 		if(statusbar[i].count > 0)
 		{
 			buffer_append_chrarr(statusstr, delim);
@@ -143,7 +136,6 @@ int getstatus()
 
 	buffer_append_chrarr(statusstr, right_delim);
 
-done:
 	return buffer_eq(&statusstrs[0], &statusstrs[1]);
 }
 
@@ -173,7 +165,6 @@ void pstdout()
 	putchar('\n');
 	fflush(stdout);
 }
-
 
 void statusloop()
 {

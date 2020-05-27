@@ -1,11 +1,12 @@
 PREFIX = /usr/local
-INCS = `pkg-config --cflags x11` -Ibuffer/include
-LIBS = `pkg-config --libs x11`
-CFLAGS = -march=native -Os -DNDEBUG -Wall -Wextra -Wmissing-declarations
+DEPS = buffer findandreplace
+INCS = `pkg-config --cflags x11` -Ibuffer/include -Ifindandreplace/include
+LIBS = `pkg-config --libs x11` findandreplace/obj/replacechr.o
+CFLAGS = -std=gnu11 -march=native -Os -DNDEBUG -Wall -Wextra -Wmissing-declarations
 
-.PHONY: clean install uninstall
+.PHONY: clean install uninstall pacman
 
-dwmblocks: dwmblocks.c blocks.h Makefile buffer
+dwmblocks: dwmblocks.c blocks.h Makefile ${DEPS}
 	${CC} -o dwmblocks ${CFLAGS} ${INCS} dwmblocks.c ${LIBS}
 
 blocks.h: blocks.def.h

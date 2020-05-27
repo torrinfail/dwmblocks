@@ -4,6 +4,7 @@
 #include<X11/Xlib.h>
 
 #include "buffer.h"
+#include "replacechr.h"
 
 #define STRLEN(X) (sizeof(X) - 1)
 #define LENGTH(X) (sizeof(X) / sizeof((X)[0]))
@@ -65,6 +66,8 @@ void getcmd(Block const* block, CommandBuffer* output)
 
 	if(output->count == icon_length)
 	{ output->count = 0; }
+
+	replacechr(output->data, output->data + output->count, '\n', ' ');
 }
 
 void getcmds(int time)

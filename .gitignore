@@ -3,6 +3,7 @@ blocks.h
 
 # Dependencies
 buffer
+findandreplace
 
 # Other
 dwmblocks-*-any.pkg.tar.xz

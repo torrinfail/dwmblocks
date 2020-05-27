@@ -21,3 +21,6 @@ install: dwmblocks
 
 uninstall:
 	rm -f ${DESTDIR}${PREFIX}/bin/dwmblocks
+
+pacman:
+	makepkg -cfi

@@ -6,7 +6,7 @@ CFLAGS = -std=gnu11 -march=native -Os -DNDEBUG -Wall -Wextra -Wmissing-declarati
 
 .PHONY: clean install uninstall pacman
 
-dwmblocks: dwmblocks.c blocks.h Makefile ${DEPS}
+dwmblocks: dwmblocks.c blocks.h Makefile
 	${CC} -o dwmblocks ${CFLAGS} ${INCS} dwmblocks.c ${LIBS}
 
 blocks.h: blocks.def.h

@@ -1,7 +1,7 @@
 PREFIX = /usr/local
 DEPS = buffer findandreplace
-INCS = `pkg-config --cflags x11` -Ibuffer/include -Ifindandreplace/include
-LIBS = `pkg-config --libs x11` findandreplace/obj/replacechr.o
+INCS = `pkg-config --cflags x11` ${DEPS:%=-I%/include}
+LIBS = `pkg-config --libs x11` $(wildcard ${DEPS:%=%/lib/*})
 CFLAGS = -std=gnu11 -march=native -Os -DNDEBUG -Wall -Wextra -Wmissing-declarations
 
 .PHONY: clean install uninstall pacman
@@ -16,9 +16,7 @@ clean:
 	rm -f *.o *.gch dwmblocks dwmblocks-*-any.pkg.tar.xz
 
 install: dwmblocks
-	mkdir -p ${DESTDIR}${PREFIX}/bin
-	cp -f dwmblocks ${DESTDIR}${PREFIX}/bin/
-	chmod 751 ${DESTDIR}${PREFIX}/bin/dwmblocks
+	install -sDt ${DESTDIR}${PREFIX}/bin dwmblocks
 
 uninstall:
 	rm -f ${DESTDIR}${PREFIX}/bin/dwmblocks

@@ -1,7 +1,7 @@
 pkgname=dwmblocks
 pkgver=0
 pkgrel=0
-pkgdesc="A statusbar for dwm"
+pkgdesc="Modular status bar for dwm written in c."
 arch=('any')
 license=('GPL2')
 

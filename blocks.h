@@ -1,20 +1,20 @@
 //Modify this file to change what commands output to your statusbar, and recompile using the make command.
 static const Block blocks[] = {
-	/*Icon*/	/*Command*/		/*Update Interval*/	/*Update Signal*/
-	{"", "cat ~/.pacupdate | sed /📦0/d",					0,		9},
-	
-	{"🧠", "free -h | awk '/^Mem/ { print $3\"/\"$2 }' | sed s/i//g",	30,		0},
+  /* icon */ /* command */ /* update interval */ /* update signal */
+  {"net: ", "nmcli | (rg 'connected to' || echo disconnected) | sed 's/.*connected to //g'", 5, 0},
 
-	{"", "~/bin/statusbar/volume",						0,		10},
+  {"",      "echo ' | '", 0, 0},
 
-	{"☀", "xbacklight | sed 's/\\..*//'",					0,		11},
-	
-	{"", "~/bin/statusbar/battery",						5,		0},
+  {"vol: ", "amixer get Master | tail -n1 | grep -o \"\\[.*\\]\"", 0, 1},
 
-	{"🌡", "sensors | awk '/^temp1:/{print $2}'",				5,		0},
+  {"",      "echo ' | '", 0, 0},
 
-	{"", "~/bin/statusbar/clock",						5,		0},
+  {"bat: ", "upower -i $(upower -e | rg BAT0) | rg -om1 '.*%' | awk '{print $2}'", 60, 0},
+
+  {"",      "echo ' | '", 0, 0},
+
+  {"",      "date +\'%a %F %H:%M\'", 60, 0},
 };
 
 //sets delimeter between status commands. NULL character ('\0') means no delimeter.
-static char delim = '|';
+static char delim = ' ';

@@ -16,7 +16,7 @@ typedef struct {
 void sighandler(int num);
 void getcmds(int time);
 #ifndef __OpenBSD__
-void getsigcmds(int signal);
+void getsigcmds(unsigned int signal);
 void setupsignals();
 void sighandler(int signum);
 #endif
@@ -44,7 +44,6 @@ void getcmd(const Block *block, char *output)
 	FILE *cmdf = popen(cmd,"r");
 	if (!cmdf)
 		return;
-	char c;
 	int i = strlen(block->icon);
 	fgets(output+i, CMDLENGTH-i, cmdf);
 	i = strlen(output);
@@ -57,7 +56,7 @@ void getcmd(const Block *block, char *output)
 void getcmds(int time)
 {
 	const Block* current;
-	for(int i = 0; i < LENGTH(blocks); i++)
+	for(unsigned int i = 0; i < LENGTH(blocks); i++)
 	{	
 		current = blocks + i;
 		if ((current->interval != 0 && time % current->interval == 0) || time == -1)
@@ -66,10 +65,10 @@ void getcmds(int time)
 }
 
 #ifndef __OpenBSD__
-void getsigcmds(int signal)
+void getsigcmds(unsigned int signal)
 {
 	const Block *current;
-	for (int i = 0; i < LENGTH(blocks); i++)
+	for (unsigned int i = 0; i < LENGTH(blocks); i++)
 	{
 		current = blocks + i;
 		if (current->signal == signal)
@@ -79,7 +78,7 @@ void getsigcmds(int signal)
 
 void setupsignals()
 {
-	for(int i = 0; i < LENGTH(blocks); i++)
+	for(unsigned int i = 0; i < LENGTH(blocks); i++)
 	{	  
 		if (blocks[i].signal > 0)
 			signal(SIGRTMIN+blocks[i].signal, sighandler);
@@ -92,7 +91,7 @@ int getstatus(char *str, char *last)
 {
 	strcpy(last, str);
 	str[0] = '\0';
-	for(int i = 0; i < LENGTH(blocks); i++)
+	for(unsigned int i = 0; i < LENGTH(blocks); i++)
 		strcat(str, statusbar[i]);
 	str[strlen(str)-1] = '\0';
 	return strcmp(str, last);//0 if they are the same
@@ -145,7 +144,7 @@ void sighandler(int signum)
 }
 #endif
 
-void termhandler(int signum)
+void termhandler()
 {
 	statusContinue = 0;
 	exit(0);

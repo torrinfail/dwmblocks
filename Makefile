@@ -1,11 +1,10 @@
 PREFIX ?= /usr/local
 CC ?= cc
 
-output: dwmblocks.c blocks.def.h blocks.h
-	${CC} `pkg-config --cflags x11 --libs x11` dwmblocks.c -o dwmblocks
+output: dwmblocks.c blocks.h
+	${CC} `pkg-config --cflags x11` `pkg-config --libs x11` -Wall -pedantic dwmblocks.c -o dwmblocks
 blocks.h:
 	cp blocks.def.h $@
-
 
 clean:
 	rm -f *.o *.gch dwmblocks

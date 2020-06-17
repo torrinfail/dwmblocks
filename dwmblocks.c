@@ -145,7 +145,6 @@ void pstdout()
 	if (!getstatus(statusstr[0], statusstr[1])) // Only write out if text has changed.
 		return;
 	printf("%s\n", statusstr[0]);
-	fflush(stdout);
 }
 
 

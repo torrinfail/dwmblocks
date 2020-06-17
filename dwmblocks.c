@@ -159,7 +159,7 @@ void statusloop()
 		writestatus();
 		if (!statusContinue)
 			break;
-		sleep(1.0);
+		sleep(1);
 	}
 }
 

@@ -19,10 +19,10 @@
 #define STATUSLENGTH (LENGTH(blocks) * CMDLENGTH + 1)
 
 typedef struct {
-	char* icon;
-	char* command;
-	unsigned int interval;
-	unsigned int signal;
+	const char *icon;
+	const char *command;
+	const unsigned int interval;
+	const int signal;
 } Block;
 #ifndef __OpenBSD__
 void dummysighandler(int num);
@@ -54,7 +54,7 @@ static char statusbar[LENGTH(blocks)][CMDLENGTH] = {0};
 static char statusstr[2][STATUSLENGTH];
 static int statusContinue = 1;
 
-//opens process *cmd and stores output in *output
+// opens process *cmd and stores output in *output
 void getcmd(const Block *block, char *output)
 {
 	strcpy(output, block->icon);
@@ -77,7 +77,7 @@ void getcmds(int time)
 	for (unsigned int i = 0; i < LENGTH(blocks); i++) {
 		current = blocks + i;
 		if ((current->interval != 0 && time % current->interval == 0) || time == -1)
-			getcmd(current,statusbar[i]);
+			getcmd(current, statusbar[i]);
 	}
 }
 
@@ -87,23 +87,22 @@ void getsigcmds(unsigned int signal)
 	for (unsigned int i = 0; i < LENGTH(blocks); i++) {
 		current = blocks + i;
 		if (current->signal == signal)
-			getcmd(current,statusbar[i]);
+			getcmd(current, statusbar[i]);
 	}
 }
 
 void setupsignals()
 {
 #ifndef __OpenBSD__
-	    /* initialize all real time signals with dummy handler */
-    for (int i = SIGRTMIN; i <= SIGRTMAX; i++)
-        signal(i, dummysighandler);
+	/* initialize all real time signals with dummy handler */
+	for (int i = SIGRTMIN; i <= SIGRTMAX; i++)
+		signal(i, dummysighandler);
 #endif
 
 	for (unsigned int i = 0; i < LENGTH(blocks); i++) {
 		if (blocks[i].signal > 0)
 			signal(SIGMINUS+blocks[i].signal, sighandler);
 	}
-
 }
 
 int getstatus(char *str, char *last)
@@ -122,7 +121,7 @@ int getstatus(char *str, char *last)
 #ifndef NO_X
 void setroot()
 {
-	if (!getstatus(statusstr[0], statusstr[1]))//Only set root if text has changed.
+	if (!getstatus(statusstr[0], statusstr[1])) // Only set root if text has changed.
 		return;
 	XStoreName(dpy, root, statusstr[0]);
 	XFlush(dpy);
@@ -143,9 +142,9 @@ int setupX()
 
 void pstdout()
 {
-	if (!getstatus(statusstr[0], statusstr[1]))//Only write out if text has changed.
+	if (!getstatus(statusstr[0], statusstr[1])) // Only write out if text has changed.
 		return;
-	printf("%s\n",statusstr[0]);
+	printf("%s\n", statusstr[0]);
 	fflush(stdout);
 }
 
@@ -183,9 +182,9 @@ void termhandler()
 	statusContinue = 0;
 }
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
-	for (int i = 0; i < argc; i++) {//Handle command line arguments
+	for (int i = 0; i < argc; i++) { //Handle command line arguments
 		if (!strcmp("-p",argv[i]))
 			writestatus = pstdout;
 	}

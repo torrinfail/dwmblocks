@@ -53,7 +53,6 @@ static void (*writestatus) () = pstdout;
 static char statusbar[LENGTH(blocks)][CMDLENGTH] = {0};
 static char statusstr[2][STATUSLENGTH];
 static int statusContinue = 1;
-static int returnStatus = 0;
 
 //opens process *cmd and stores output in *output
 void getcmd(const Block *block, char *output)
@@ -63,17 +62,12 @@ void getcmd(const Block *block, char *output)
 	if (!cmdf)
 		return;
 	int i = strlen(block->icon);
-	fgets(output+i, CMDLENGTH-i-delimLen, cmdf);
+	fgets(output+i, CMDLENGTH-i, cmdf);
 	i = strlen(output);
-	if (i == 0)//return if block and command output are both empty
-		return;
-	if (delim[0] != '\0') {
-		//only chop off newline if one is present at the end
-		i = output[i-1] == '\n' ? i-1 : i;
-		strncpy(output+i, delim, delimLen); 
-	}
-	else
-		output[i++] = '\0';
+
+	// delete \n from cmd output
+	if (i != 0 && output[i - 1] == '\n')
+		output[i - 1] = '\0';
 	pclose(cmdf);
 }
 
@@ -115,11 +109,14 @@ void setupsignals()
 int getstatus(char *str, char *last)
 {
 	strcpy(last, str);
-	str[0] = '\0';
-	for (unsigned int i = 0; i < LENGTH(blocks); i++)
+	str[0] = '\0'; // str is now effectively empty
+
+	for(size_t i = 0; i < LENGTH(blocks); i++) {
 		strcat(str, statusbar[i]);
-	str[strlen(str)-strlen(delim)] = '\0';
-	return strcmp(str, last);//0 if they are the same
+		if (i != LENGTH(blocks) - 1 && strlen(statusbar[i]))
+			strcat(str, delim);
+	}
+	return strcmp(str, last); // 0 if they are the same
 }
 
 #ifndef NO_X
@@ -189,17 +186,13 @@ void termhandler()
 int main(int argc, char** argv)
 {
 	for (int i = 0; i < argc; i++) {//Handle command line arguments
-		if (!strcmp("-d",argv[i]))
-			strncpy(delim, argv[++i], delimLen);
-		else if (!strcmp("-p",argv[i]))
+		if (!strcmp("-p",argv[i]))
 			writestatus = pstdout;
 	}
 #ifndef NO_X
 	if (!setupX())
 		return 1;
 #endif
-	delimLen = MIN(delimLen, strlen(delim));
-	delim[delimLen++] = '\0';
 	signal(SIGTERM, termhandler);
 	signal(SIGINT, termhandler);
 	statusloop();

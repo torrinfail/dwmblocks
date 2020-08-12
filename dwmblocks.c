@@ -4,6 +4,13 @@
 #include<unistd.h>
 #include<signal.h>
 #include<X11/Xlib.h>
+#ifdef __OpenBSD__
+#define SIGPLUS			SIGUSR1+1
+#define SIGMINUS		SIGUSR1-1
+#else
+#define SIGPLUS			SIGRTMIN
+#define SIGMINUS		SIGRTMIN
+#endif
 #define LENGTH(X)               (sizeof(X) / sizeof (X[0]))
 #define CMDLENGTH		50
 #define STATUSLENGTH (LENGTH(blocks) * CMDLENGTH + 1)
@@ -14,14 +21,14 @@ typedef struct {
 	unsigned int interval;
 	unsigned int signal;
 } Block;
+#ifndef __OpenBSD__
 void dummysighandler(int num);
+#endif
 void sighandler(int num);
 void getcmds(int time);
-#ifndef __OpenBSD__
 void getsigcmds(int signal);
 void setupsignals();
 void sighandler(int signum);
-#endif
 int getstatus(char *str, char *last);
 void setroot();
 void statusloop();
@@ -67,7 +74,6 @@ void getcmds(int time)
 	}
 }
 
-#ifndef __OpenBSD__
 void getsigcmds(int signal)
 {
 	const Block *current;
@@ -81,18 +87,19 @@ void getsigcmds(int signal)
 
 void setupsignals()
 {
-    /* initialize all real time signals with dummy handler */
+#ifndef __OpenBSD__
+	    /* initialize all real time signals with dummy handler */
     for(int i = SIGRTMIN; i <= SIGRTMAX; i++)
         signal(i, dummysighandler);
+#endif
 
 	for(int i = 0; i < LENGTH(blocks); i++)
 	{
 		if (blocks[i].signal > 0)
-			signal(SIGRTMIN+blocks[i].signal, sighandler);
+			signal(SIGMINUS+blocks[i].signal, sighandler);
 	}
 
 }
-#endif
 
 int getstatus(char *str, char *last)
 {
@@ -129,9 +136,7 @@ void pstdout()
 
 void statusloop()
 {
-#ifndef __OpenBSD__
 	setupsignals();
-#endif
 	int i = 0;
 	getcmds(-1);
 	while(statusContinue)
@@ -151,13 +156,11 @@ void dummysighandler(int signum)
 }
 #endif
 
-#ifndef __OpenBSD__
 void sighandler(int signum)
 {
-	getsigcmds(signum-SIGRTMIN);
+	getsigcmds(signum-SIGPLUS);
 	writestatus();
 }
-#endif
 
 void termhandler(int signum)
 {

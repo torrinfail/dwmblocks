@@ -165,7 +165,6 @@ void sighandler(int signum)
 void termhandler(int signum)
 {
 	statusContinue = 0;
-	exit(0);
 }
 
 int main(int argc, char** argv)

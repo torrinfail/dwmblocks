@@ -68,7 +68,7 @@ void getcmd(const Block *block, char *output)
 void getcmds(int time)
 {
 	const Block* current;
-	for(unsigned int i = 0; i < LENGTH(blocks); i++)
+	for (unsigned int i = 0; i < LENGTH(blocks); i++)
 	{
 		current = blocks + i;
 		if ((current->interval != 0 && time % current->interval == 0) || time == -1)
@@ -91,11 +91,11 @@ void setupsignals()
 {
 #ifndef __OpenBSD__
 	    /* initialize all real time signals with dummy handler */
-    for(int i = SIGRTMIN; i <= SIGRTMAX; i++)
+    for (int i = SIGRTMIN; i <= SIGRTMAX; i++)
         signal(i, dummysighandler);
 #endif
 
-	for(unsigned int i = 0; i < LENGTH(blocks); i++)
+	for (unsigned int i = 0; i < LENGTH(blocks); i++)
 	{
 		if (blocks[i].signal > 0)
 			signal(SIGMINUS+blocks[i].signal, sighandler);
@@ -107,7 +107,7 @@ int getstatus(char *str, char *last)
 {
 	strcpy(last, str);
 	str[0] = '\0';
-	for(unsigned int i = 0; i < LENGTH(blocks); i++)
+	for (unsigned int i = 0; i < LENGTH(blocks); i++)
 		strcat(str, statusbar[i]);
 	str[strlen(str)-strlen(delim)] = '\0';
 	return strcmp(str, last);//0 if they are the same
@@ -141,12 +141,11 @@ void statusloop()
 	setupsignals();
 	int i = 0;
 	getcmds(-1);
-	while(statusContinue)
+	while (statusContinue)
 	{
-		getcmds(i);
+		getcmds(i++);
 		writestatus();
 		sleep(1.0);
-		i++;
 	}
 }
 
@@ -171,11 +170,11 @@ void termhandler()
 
 int main(int argc, char** argv)
 {
-	for(int i = 0; i < argc; i++)
+	for (int i = 0; i < argc; i++) //Handle command line arguments
 	{
 		if (!strcmp("-d",argv[i]))
 			strncpy(delim, argv[++i], delimLen);
-		else if(!strcmp("-p",argv[i]))
+		else if (!strcmp("-p",argv[i]))
 			writestatus = pstdout;
 	}
 	delim[MIN(delimLen, strlen(delim))] = '\0';

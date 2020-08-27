@@ -178,7 +178,8 @@ int main(int argc, char** argv)
 		else if (!strcmp("-p",argv[i]))
 			writestatus = pstdout;
 	}
-	delim[MIN(delimLen, strlen(delim))] = '\0';
+	delimLen = MIN(delimLen, strlen(delim));
+	delim[delimLen++] = '\0';
 	signal(SIGTERM, termhandler);
 	signal(SIGINT, termhandler);
 	statusloop();

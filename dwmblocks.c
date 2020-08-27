@@ -50,16 +50,17 @@ static void (*writestatus) () = setroot;
 void getcmd(const Block *block, char *output)
 {
 	strcpy(output, block->icon);
-	char *cmd = block->command;
-	FILE *cmdf = popen(cmd,"r");
+	FILE *cmdf = popen(block->command, "r");
 	if (!cmdf)
 		return;
-	char c;
 	int i = strlen(block->icon);
 	fgets(output+i, CMDLENGTH-i-delimLen, cmdf);
 	i = strlen(output);
-	if (delim[0] != '\0' && --i)
-		 strncpy(output+i, delim, delimLen); 
+	if (delim[0] != '\0') {
+		//only chop off newline if one is present at the end
+		i = output[i-1] == '\n' ? i-1 : i;
+		strncpy(output+i, delim, delimLen); 
+	}
 	else
 		output[i++] = '\0';
 	pclose(cmdf);

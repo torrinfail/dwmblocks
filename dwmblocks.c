@@ -117,7 +117,7 @@ void getsigcmds(unsigned int signal)
 		//Ignore signals if thread called by signal is already running, this seems to prevent other blocks from freezing when signal is spammed
 		if (current->signal && !current->calledBySignal)
 		{
-			//Allow only one thread per command at once(Not any real reason)
+			//Allow only one thread per command at once
 			pthread_mutex_lock(&threadMutex[i]);
 			current->calledBySignal = 1;
 			pthread_create(&threadId, &attr, getcmd, (void*) current);
@@ -146,14 +146,12 @@ int getblockstatus(char *str, char *last)
 	if (strcmp(str, last)) { //0 if they are the same
 		strcpy(last, str);
 		statusstr[0] = '\0';
-		for ( int i = 0; i < LENGTH(blocks); i++)
-		{
+		for ( unsigned int i = 0; i < LENGTH(blocks); i++)
 			strcat(statusstr, statusbar[0][i]);
-		}
 		statusstr[strlen(statusstr)-strlen(delim)] = '\0';
 		return 0;
 	}
-	return -1;
+	return 1;
 }
 
 void setroot(int i)
@@ -184,7 +182,7 @@ void statusloop()
 {
 	setupsignals();
 	//Start block threads
-	for (int i = 0; i < LENGTH(blocks); i++)
+	for (unsigned int i = 0; i < LENGTH(blocks); i++)
 	{
 		const Block *current = blocks+i;
 		//Only one thread per block

@@ -4,6 +4,7 @@
 #include<unistd.h>
 #include<signal.h>
 #include<X11/Xlib.h>
+#include<pthread.h>
 #ifdef __OpenBSD__
 #define SIGPLUS			SIGUSR1+1
 #define SIGMINUS		SIGUSR1-1
@@ -21,6 +22,7 @@ typedef struct {
 	char* command;
 	unsigned int interval;
 	unsigned int signal;
+	int calledBySignal; //Keep track if "block is called by signal"
 } Block;
 #ifndef __OpenBSD__
 void dummysighandler(int num);
@@ -30,8 +32,8 @@ void getcmds(int time);
 void getsigcmds(unsigned int signal);
 void setupsignals();
 void sighandler(int signum);
-int getstatus(char *str, char *last);
-void setroot();
+int getblockstatus(char *str, char *last);
+void setroot(int i);
 void statusloop();
 void termhandler();
 
@@ -41,52 +43,85 @@ void termhandler();
 static Display *dpy;
 static int screen;
 static Window root;
-static char statusbar[LENGTH(blocks)][CMDLENGTH] = {0};
-static char statusstr[2][STATUSLENGTH];
+static char statusbar[2][LENGTH(blocks)][CMDLENGTH] = {0};
+static char statusstr[STATUSLENGTH];
 static int statusContinue = 1;
-static void (*writestatus) () = setroot;
+static void (*writestatus) (int i) = setroot;
+static pthread_t threadId;
+static pthread_attr_t attr;
+static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER; //Global mutex
+static pthread_mutex_t threadMutex[LENGTH(blocks)] = {PTHREAD_MUTEX_INITIALIZER}; //Block spefific mutexes
 
-//opens process *cmd and stores output in *output
-void getcmd(const Block *block, char *output)
+//opens process *cmd, call writestatus and loop current block
+void *getcmd(void *currentBlock)
 {
-	strcpy(output, block->icon);
+	Block *block = (Block*) currentBlock;
+	int blockNum = block - blocks;
+
+	//Use temporary string so output doesn't get blank for other threads
+	char str[255] = {0};
+	strcpy(str, block->icon);
 	FILE *cmdf = popen(block->command, "r");
 	if (!cmdf)
-		return;
+		goto ENDTHREAD;
 	int i = strlen(block->icon);
-	fgets(output+i, CMDLENGTH-i-delimLen, cmdf);
-	i = strlen(output);
+	fgets(str+i, CMDLENGTH-i-delimLen, cmdf);
+	i = strlen(str);
 	if (i == 0)//return if block and command output are both empty
-		return;
+		goto ENDTHREAD;
 	if (delim[0] != '\0') {
 		//only chop off newline if one is present at the end
-		i = output[i-1] == '\n' ? i-1 : i;
-		strncpy(output+i, delim, delimLen); 
+		i = str[i-1] == '\n' ? --i : i;
+		strncpy(str+i, delim, delimLen); 
 	}
 	else
-		output[i++] = '\0';
+		str[i++] = '\0';
 	pclose(cmdf);
-}
 
-void getcmds(int time)
-{
-	const Block* current;
-	for (unsigned int i = 0; i < LENGTH(blocks); i++)
+	strcpy(statusbar[0][blockNum], str);
+
+	//Only allow one block at the time to use writestatus
+	pthread_mutex_lock(&mutex);
+	writestatus(blockNum);
+	pthread_mutex_unlock(&mutex);
+	
+ENDTHREAD:
+	//Don't create more threads when called as signal
+	if ( block->calledBySignal)
 	{
-		current = blocks + i;
-		if ((current->interval != 0 && time % current->interval == 0) || time == -1)
-			getcmd(current,statusbar[i]);
+			block->calledBySignal = 0;
+			pthread_mutex_unlock(&threadMutex[blockNum]);
+			pthread_exit(NULL);
 	}
+
+	//Unlock mutex
+	pthread_mutex_unlock(&threadMutex[blockNum]);
+
+	//Wait block specific interval, and call function again
+	sleep(block->interval);
+	
+	//Allow only one thread per block at once
+	pthread_mutex_lock(&threadMutex[blockNum]);
+	pthread_create(&threadId, &attr, getcmd, (void*) block);
+	
+	
+	pthread_exit(NULL);
 }
 
 void getsigcmds(unsigned int signal)
 {
-	const Block *current;
+	Block *current;
 	for (unsigned int i = 0; i < LENGTH(blocks); i++)
 	{
 		current = blocks + i;
-		if (current->signal == signal)
-			getcmd(current,statusbar[i]);
+		//Ignore signals if thread called by signal is already running, this seems to prevent other blocks from freezing when signal is spammed
+		if (current->signal && !current->calledBySignal)
+		{
+			//Allow only one thread per command at once(Not any real reason)
+			pthread_mutex_lock(&threadMutex[i]);
+			current->calledBySignal = 1;
+			pthread_create(&threadId, &attr, getcmd, (void*) current);
+		}
 	}
 }
 
@@ -106,35 +141,41 @@ void setupsignals()
 
 }
 
-int getstatus(char *str, char *last)
+int getblockstatus(char *str, char *last)
 {
-	strcpy(last, str);
-	str[0] = '\0';
-	for (unsigned int i = 0; i < LENGTH(blocks); i++)
-		strcat(str, statusbar[i]);
-	str[strlen(str)-strlen(delim)] = '\0';
-	return strcmp(str, last);//0 if they are the same
+	if (strcmp(str, last)) { //0 if they are the same
+		strcpy(last, str);
+		statusstr[0] = '\0';
+		for ( int i = 0; i < LENGTH(blocks); i++)
+		{
+			strcat(statusstr, statusbar[0][i]);
+		}
+		statusstr[strlen(statusstr)-strlen(delim)] = '\0';
+		return 0;
+	}
+	return -1;
 }
 
-void setroot()
+void setroot(int i)
 {
-	if (!getstatus(statusstr[0], statusstr[1]))//Only set root if text has changed.
+	//Only compare single "block" of text
+	if (getblockstatus(statusbar[0][i], statusbar[1][i]))//Only set root if text has changed.
 		return;
 	Display *d = XOpenDisplay(NULL);
-	if (d) {
-		dpy = d;
-	}
+	if (!d)
+		return;
+	dpy = d;
 	screen = DefaultScreen(dpy);
 	root = RootWindow(dpy, screen);
-	XStoreName(dpy, root, statusstr[0]);
+	XStoreName(dpy, root, statusstr);
 	XCloseDisplay(dpy);
 }
 
-void pstdout()
+void pstdout(int i)
 {
-	if (!getstatus(statusstr[0], statusstr[1]))//Only write out if text has changed.
+	if (getblockstatus(statusbar[0][i], statusbar[1][i]))///Only write out if text has changed.
 		return;
-	printf("%s\n",statusstr[0]);
+	printf("%s\n",statusstr);
 	fflush(stdout);
 }
 
@@ -142,12 +183,17 @@ void pstdout()
 void statusloop()
 {
 	setupsignals();
-	int i = 0;
-	getcmds(-1);
+	//Start block threads
+	for (int i = 0; i < LENGTH(blocks); i++)
+	{
+		const Block *current = blocks+i;
+		//Only one thread per block
+		pthread_mutex_lock(&threadMutex[i]);
+		pthread_create(&threadId, &attr, getcmd, (void*) current);
+	}
+	//Keep main process running
 	while (statusContinue)
 	{
-		getcmds(i++);
-		writestatus();
 		sleep(1.0);
 	}
 }
@@ -163,7 +209,6 @@ void dummysighandler(int signum)
 void sighandler(int signum)
 {
 	getsigcmds(signum-SIGPLUS);
-	writestatus();
 }
 
 void termhandler()
@@ -184,5 +229,10 @@ int main(int argc, char** argv)
 	delim[delimLen++] = '\0';
 	signal(SIGTERM, termhandler);
 	signal(SIGINT, termhandler);
+
+	//Create attrib for creating thread, so threads won't need to get attached
+	pthread_attr_init(&attr);	
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+
 	statusloop();
 }

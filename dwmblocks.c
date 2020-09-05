@@ -3,7 +3,9 @@
 #include<string.h>
 #include<unistd.h>
 #include<signal.h>
+#ifndef NO_X
 #include<X11/Xlib.h>
+#endif
 #ifdef __OpenBSD__
 #define SIGPLUS			SIGUSR1+1
 #define SIGMINUS		SIGUSR1-1
@@ -31,20 +33,23 @@ void getsigcmds(unsigned int signal);
 void setupsignals();
 void sighandler(int signum);
 int getstatus(char *str, char *last);
-void setroot();
 void statusloop();
 void termhandler();
+void pstdout();
+#ifndef NO_X
+void setroot();
+static void (*writestatus) () = setroot;
+#else
+static void (*writestatus) () = pstdout;
+#endif
 
 
 #include "blocks.h"
 
-static Display *dpy;
-static int screen;
-static Window root;
 static char statusbar[LENGTH(blocks)][CMDLENGTH] = {0};
 static char statusstr[2][STATUSLENGTH];
 static int statusContinue = 1;
-static void (*writestatus) () = setroot;
+static int returnStatus = 0;
 
 //opens process *cmd and stores output in *output
 void getcmd(const Block *block, char *output)
@@ -116,19 +121,27 @@ int getstatus(char *str, char *last)
 	return strcmp(str, last);//0 if they are the same
 }
 
+#ifndef NO_X
 void setroot()
 {
+	static Display *dpy;
+	static int screen;
+	static Window root;
 	if (!getstatus(statusstr[0], statusstr[1]))//Only set root if text has changed.
 		return;
-	Display *d = XOpenDisplay(NULL);
-	if (d) {
-		dpy = d;
+	dpy = XOpenDisplay(NULL);
+	if (!dpy) {
+		fprintf(stderr, "Failed to open display\n");
+		statusContinue = 0;
+		returnStatus = 1;
+		return;
 	}
 	screen = DefaultScreen(dpy);
 	root = RootWindow(dpy, screen);
 	XStoreName(dpy, root, statusstr[0]);
 	XCloseDisplay(dpy);
 }
+#endif
 
 void pstdout()
 {
@@ -144,10 +157,12 @@ void statusloop()
 	setupsignals();
 	int i = 0;
 	getcmds(-1);
-	while (statusContinue)
+	while (1)
 	{
 		getcmds(i++);
 		writestatus();
+		if (!statusContinue)
+			break;
 		sleep(1.0);
 	}
 }
@@ -185,4 +200,5 @@ int main(int argc, char** argv)
 	signal(SIGTERM, termhandler);
 	signal(SIGINT, termhandler);
 	statusloop();
+	return returnStatus;
 }

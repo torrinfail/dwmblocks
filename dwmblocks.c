@@ -3,8 +3,10 @@
 #include<string.h>
 #include<unistd.h>
 #include<signal.h>
-#include<X11/Xlib.h>
 #include<pthread.h>
+#ifndef NO_X
+#include<X11/Xlib.h>
+#endif
 #ifdef __OpenBSD__
 #define SIGPLUS			SIGUSR1+1
 #define SIGMINUS		SIGUSR1-1
@@ -28,7 +30,6 @@ typedef struct {
 void dummysighandler(int num);
 #endif
 void sighandler(int num);
-void getcmds(int time);
 void getsigcmds(unsigned int signal);
 void setupsignals();
 void sighandler(int signum);
@@ -36,6 +37,16 @@ int getblockstatus(char *str, char *last);
 void setroot(int i);
 void statusloop();
 void termhandler();
+void pstdout();
+#ifndef NO_X
+static void (*writestatus) (int i) = setroot;
+static int setupX();
+static Display *dpy;
+static int screen;
+static Window root;
+#else
+static void (*writestatus) (int i) = pstdout;
+#endif
 
 
 #include "blocks.h"
@@ -46,7 +57,7 @@ static Window root;
 static char statusbar[2][LENGTH(blocks)][CMDLENGTH] = {0};
 static char statusstr[STATUSLENGTH];
 static int statusContinue = 1;
-static void (*writestatus) (int i) = setroot;
+static int returnStatus = 0;
 static pthread_t threadId;
 static pthread_attr_t attr;
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER; //Global mutex
@@ -111,13 +122,12 @@ ENDTHREAD:
 void getsigcmds(unsigned int signal)
 {
 	Block *current;
-	for (unsigned int i = 0; i < LENGTH(blocks); i++)
-	{
+	for (unsigned int i = 0; i < LENGTH(blocks); i++) {
 		current = blocks + i;
 		//Ignore signals if thread called by signal is already running, this seems to prevent other blocks from freezing when signal is spammed
 		if (current->signal && !current->calledBySignal)
 		{
-			//Allow only one thread per command at once
+			//Allow only one thread per command at once(Not any real reason)
 			pthread_mutex_lock(&threadMutex[i]);
 			current->calledBySignal = 1;
 			pthread_create(&threadId, &attr, getcmd, (void*) current);
@@ -133,8 +143,7 @@ void setupsignals()
         signal(i, dummysighandler);
 #endif
 
-	for (unsigned int i = 0; i < LENGTH(blocks); i++)
-	{
+	for (unsigned int i = 0; i < LENGTH(blocks); i++) {
 		if (blocks[i].signal > 0)
 			signal(SIGMINUS+blocks[i].signal, sighandler);
 	}
@@ -146,28 +155,37 @@ int getblockstatus(char *str, char *last)
 	if (strcmp(str, last)) { //0 if they are the same
 		strcpy(last, str);
 		statusstr[0] = '\0';
-		for ( unsigned int i = 0; i < LENGTH(blocks); i++)
+		for ( int i = 0; i < LENGTH(blocks); i++)
 			strcat(statusstr, statusbar[0][i]);
+
 		statusstr[strlen(statusstr)-strlen(delim)] = '\0';
 		return 0;
 	}
-	return 1;
+	return -1;
 }
 
+#ifndef NO_X
 void setroot(int i)
 {
 	//Only compare single "block" of text
 	if (getblockstatus(statusbar[0][i], statusbar[1][i]))//Only set root if text has changed.
 		return;
-	Display *d = XOpenDisplay(NULL);
-	if (!d)
-		return;
-	dpy = d;
+	XStoreName(dpy, root, statusstr);
+	XFlush(dpy);
+}
+
+int setupX()
+{
+	dpy = XOpenDisplay(NULL);
+	if (!dpy) {
+		fprintf(stderr, "dwmblocks: Failed to open display\n");
+		return 0;
+	}
 	screen = DefaultScreen(dpy);
 	root = RootWindow(dpy, screen);
-	XStoreName(dpy, root, statusstr);
-	XCloseDisplay(dpy);
+	return 1;
 }
+#endif
 
 void pstdout(int i)
 {
@@ -181,17 +199,18 @@ void pstdout(int i)
 void statusloop()
 {
 	setupsignals();
+	int i = 0;
 	//Start block threads
-	for (unsigned int i = 0; i < LENGTH(blocks); i++)
-	{
-		const Block *current = blocks+i;
+	for (int i = 0; i < LENGTH(blocks); i++) {
+		Block *current = blocks+i;
 		//Only one thread per block
 		pthread_mutex_lock(&threadMutex[i]);
 		pthread_create(&threadId, &attr, getcmd, (void*) current);
 	}
 	//Keep main process running
-	while (statusContinue)
-	{
+	while (1) {
+		if (!statusContinue)
+			break;
 		sleep(1.0);
 	}
 }
@@ -216,13 +235,16 @@ void termhandler()
 
 int main(int argc, char** argv)
 {
-	for (int i = 0; i < argc; i++) //Handle command line arguments
-	{
+	for (int i = 0; i < argc; i++) {//Handle command line arguments
 		if (!strcmp("-d",argv[i]))
 			strncpy(delim, argv[++i], delimLen);
 		else if (!strcmp("-p",argv[i]))
 			writestatus = pstdout;
 	}
+#ifndef NO_X
+	if (!setupX())
+		return 1;
+#endif
 	delimLen = MIN(delimLen, strlen(delim));
 	delim[delimLen++] = '\0';
 	signal(SIGTERM, termhandler);
@@ -233,4 +255,8 @@ int main(int argc, char** argv)
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 
 	statusloop();
+#ifndef NO_X
+	XCloseDisplay(dpy);
+#endif
+	return 0;
 }

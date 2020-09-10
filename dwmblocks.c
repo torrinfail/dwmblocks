@@ -37,7 +37,7 @@ int getblockstatus(char *str, char *last);
 void setroot(int i);
 void statusloop();
 void termhandler();
-void pstdout();
+void pstdout(int i);
 #ifndef NO_X
 static void (*writestatus) (int i) = setroot;
 static int setupX();
@@ -51,9 +51,7 @@ static void (*writestatus) (int i) = pstdout;
 
 #include "blocks.h"
 
-static Display *dpy;
-static int screen;
-static Window root;
+
 static char statusbar[2][LENGTH(blocks)][CMDLENGTH] = {0};
 static char statusstr[STATUSLENGTH];
 static int statusContinue = 1;

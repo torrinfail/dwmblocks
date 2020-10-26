@@ -33,6 +33,7 @@ void sighandler(int num);
 void getsigcmds(unsigned int signal);
 void setupsignals();
 void sighandler(int signum);
+
 int getblockstatus(char *str, char *last);
 void setroot(int i);
 void statusloop();
@@ -50,7 +51,6 @@ static void (*writestatus) (int i) = pstdout;
 
 
 #include "blocks.h"
-
 
 static char statusbar[2][LENGTH(blocks)][CMDLENGTH] = {0};
 static char statusstr[STATUSLENGTH];
@@ -112,7 +112,6 @@ ENDTHREAD:
 	//Allow only one thread per block at once
 	pthread_mutex_lock(&threadMutex[blockNum]);
 	pthread_create(&threadId, &attr, getcmd, (void*) block);
-	
 	
 	pthread_exit(NULL);
 }
@@ -197,7 +196,6 @@ void pstdout(int i)
 void statusloop()
 {
 	setupsignals();
-	int i = 0;
 	//Start block threads
 	for (int i = 0; i < LENGTH(blocks); i++) {
 		Block *current = blocks+i;

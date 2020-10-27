@@ -37,7 +37,7 @@ int getblockstatus(char *str, char *last);
 void setroot(int i);
 void statusloop();
 void termhandler();
-void pstdout();
+void pstdout(int i);
 #ifndef NO_X
 static void (*writestatus) (int i) = setroot;
 static int setupX();

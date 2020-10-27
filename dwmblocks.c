@@ -33,12 +33,11 @@ void sighandler(int num);
 void getsigcmds(unsigned int signal);
 void setupsignals();
 void sighandler(int signum);
-
 int getblockstatus(char *str, char *last);
 void setroot(int i);
 void statusloop();
 void termhandler();
-void pstdout(int i);
+void pstdout();
 #ifndef NO_X
 static void (*writestatus) (int i) = setroot;
 static int setupX();
@@ -59,10 +58,9 @@ static int returnStatus = 0;
 static pthread_t threadId;
 static pthread_attr_t attr;
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER; //Global mutex
-static pthread_mutex_t threadMutex[LENGTH(blocks)] = {PTHREAD_MUTEX_INITIALIZER}; //Block spefific mutexes
 
 //opens process *cmd, call writestatus and loop current block
-void *getcmd(void *currentBlock)
+void *blockLoop(void *currentBlock)
 {
 	Block *block = (Block*) currentBlock;
 	int blockNum = block - blocks;
@@ -70,49 +68,44 @@ void *getcmd(void *currentBlock)
 	//Use temporary string so output doesn't get blank for other threads
 	char str[255] = {0};
 	strcpy(str, block->icon);
-	FILE *cmdf = popen(block->command, "r");
-	if (!cmdf)
-		goto ENDTHREAD;
-	int i = strlen(block->icon);
-	fgets(str+i, CMDLENGTH-i-delimLen, cmdf);
-	i = strlen(str);
-	if (i == 0)//return if block and command output are both empty
-		goto ENDTHREAD;
-	if (delim[0] != '\0') {
-		//only chop off newline if one is present at the end
-		i = str[i-1] == '\n' ? --i : i;
-		strncpy(str+i, delim, delimLen); 
-	}
-	else
-		str[i++] = '\0';
-	pclose(cmdf);
 
-	strcpy(statusbar[0][blockNum], str);
+	//Loop until program is to be killed (may be un-necessary)
+	while (statusContinue) {
+		FILE *cmdf = popen(block->command, "r");
+		if (!cmdf)
+			goto ENDLOOP;
+		int i = strlen(block->icon);
+		fgets(str+i, CMDLENGTH-i-delimLen, cmdf);
+		i = strlen(str);
+		if (i == 0)//return if block and command output are both empty
+			goto ENDLOOP;
+		if (delim[0] != '\0') {
+			//only chop off newline if one is present at the end
+			i = str[i-1] == '\n' ? --i : i;
+			strncpy(str+i, delim, delimLen); 
+		}
+		else
+			str[i++] = '\0';
+		pclose(cmdf);
 
-	//Only allow one block at the time to use writestatus
-	pthread_mutex_lock(&mutex);
-	writestatus(blockNum);
-	pthread_mutex_unlock(&mutex);
-	
-ENDTHREAD:
-	//Don't create more threads when called as signal
-	if ( block->calledBySignal)
-	{
+		strcpy(statusbar[0][blockNum], str);
+
+		//Only allow one block at the time to use writestatus
+		pthread_mutex_lock(&mutex);
+		writestatus(blockNum);
+		pthread_mutex_unlock(&mutex);
+
+ENDLOOP:
+		//Kill thread if created by signal
+		if ( block->calledBySignal){
 			block->calledBySignal = 0;
-			pthread_mutex_unlock(&threadMutex[blockNum]);
-			pthread_exit(NULL);
+			break;
+		}
+
+		//Wait block specific interval, and call function again
+		sleep(block->interval);
+
 	}
-
-	//Unlock mutex
-	pthread_mutex_unlock(&threadMutex[blockNum]);
-
-	//Wait block specific interval, and call function again
-	sleep(block->interval);
-	
-	//Allow only one thread per block at once
-	pthread_mutex_lock(&threadMutex[blockNum]);
-	pthread_create(&threadId, &attr, getcmd, (void*) block);
-	
 	pthread_exit(NULL);
 }
 
@@ -122,12 +115,9 @@ void getsigcmds(unsigned int signal)
 	for (unsigned int i = 0; i < LENGTH(blocks); i++) {
 		current = blocks + i;
 		//Ignore signals if thread called by signal is already running, this seems to prevent other blocks from freezing when signal is spammed
-		if (current->signal && !current->calledBySignal)
-		{
-			//Allow only one thread per command at once(Not any real reason)
-			pthread_mutex_lock(&threadMutex[i]);
+		if (current->signal && !current->calledBySignal){
 			current->calledBySignal = 1;
-			pthread_create(&threadId, &attr, getcmd, (void*) current);
+			pthread_create(&threadId, &attr, blockLoop, (void*) current);
 		}
 	}
 }
@@ -199,14 +189,10 @@ void statusloop()
 	//Start block threads
 	for (int i = 0; i < LENGTH(blocks); i++) {
 		Block *current = blocks+i;
-		//Only one thread per block
-		pthread_mutex_lock(&threadMutex[i]);
-		pthread_create(&threadId, &attr, getcmd, (void*) current);
+		pthread_create(&threadId, &attr, blockLoop, (void*) current);
 	}
 	//Keep main process running
-	while (1) {
-		if (!statusContinue)
-			break;
+	while (statusContinue) {
 		sleep(1.0);
 	}
 }

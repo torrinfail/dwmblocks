@@ -189,6 +189,7 @@ void statusloop()
 	//Start block threads
 	for (int i = 0; i < LENGTH(blocks); i++) {
 		Block *current = blocks+i;
+		if ( current->interval != 0 )
 		pthread_create(&threadId, &attr, blockLoop, (void*) current);
 	}
 	//Keep main process running

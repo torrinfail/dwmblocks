@@ -12,4 +12,4 @@ This is so you can edit your status bar commands and they will not get overwritt
 Here are some patches to dwmblocks that add features that I either don't want to merge in, or that require a dwm patch to work.
 I do not maintain these but I will take pull requests to update them.
 <br>
-<a href=https://gist.github.com/IGeraGera/69cd7929c9da81b3d625a6a82a04b883>dwmblocks-statuscmd-b6b0be4.diff</a>
+<a href=https://gist.github.com/IGeraGera/e4a5583b91b3eec2e81fdceb44dea717>dwmblocks-statuscmd-b6b0be4.diff</a>

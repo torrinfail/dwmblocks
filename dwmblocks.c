@@ -65,8 +65,11 @@ void getcmd(const Block *block, char *output)
 	int i = strlen(block->icon);
 	fgets(output+i, CMDLENGTH-i-delimLen, cmdf);
 	i = strlen(output);
-	if (i == 0)//return if block and command output are both empty
+	if (i == 0) {
+		//return if block and command output are both empty
+		pclose(cmdf);
 		return;
+	}
 	if (delim[0] != '\0') {
 		//only chop off newline if one is present at the end
 		i = output[i-1] == '\n' ? i-1 : i;

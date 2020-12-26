@@ -86,7 +86,6 @@ void *blockLoop(void *currentBlock)
 		}
 		else
 			str[i++] = '\0';
-		pclose(cmdf);
 
 		strcpy(statusbar[0][blockNum], str);
 
@@ -96,15 +95,15 @@ void *blockLoop(void *currentBlock)
 		pthread_mutex_unlock(&mutex);
 
 ENDLOOP:
+    //Call pclose() here so it always gets called
+    pclose(cmdf);
 		//Kill thread if created by signal
 		if ( block->calledBySignal){
 			block->calledBySignal = 0;
 			break;
 		}
-
 		//Wait block specific interval, and call function again
 		sleep(block->interval);
-
 	}
 	pthread_exit(NULL);
 }

@@ -1,8 +1,10 @@
 PREFIX ?= /usr/local
 CC ?= cc
+LDFLAGS = -lX11 -pthread
 
 output: dwmblocks.c blocks.def.h blocks.h
-	${CC} `pkg-config --cflags x11 --libs x11` -pthread dwmblocks.c -o dwmblocks
+	${CC}  dwmblocks.c $(LDFLAGS) -o dwmblocks
+  
 blocks.h:
 	cp blocks.def.h $@
 

@@ -68,35 +68,28 @@ void *blockLoop(void *currentBlock)
 	//Use temporary string so output doesn't get blank for other threads
 	char str[255] = {0};
 	strcpy(str, block->icon);
-
+	
 	//Loop until program is to be killed (may be un-necessary)
 	while (statusContinue) {
 		FILE *cmdf = popen(block->command, "r");
-		if (!cmdf)
-			goto ENDLOOP;
-		int i = strlen(block->icon);
-		fgets(str+i, CMDLENGTH-i-delimLen, cmdf);
-		i = strlen(str);
-		if (i == 0)//return if block and command output are both empty
-			goto ENDLOOP;
-		if (delim[0] != '\0') {
-			//only chop off newline if one is present at the end
-			i = str[i-1] == '\n' ? --i : i;
-			strncpy(str+i, delim, delimLen); 
+		if (cmdf) {
+			int i = strlen(block->icon);
+			fgets(str+i, CMDLENGTH-i-delimLen, cmdf);
+			i = strlen(str);
+			if (i != 0) {//return if block and command output are both empty
+				//only chop off newline if one is present at the end
+				i = str[i-1] == '\n' ? --i : i;
+				strncpy(str+i, delim, delimLen); 
+				strcpy(statusbar[0][blockNum], str);
+
+				//Only allow one block at the time to use writestatus
+				pthread_mutex_lock(&mutex);
+				writestatus(blockNum);
+				pthread_mutex_unlock(&mutex);
+			}
 		}
-		else
-			str[i++] = '\0';
-
-		strcpy(statusbar[0][blockNum], str);
-
-		//Only allow one block at the time to use writestatus
-		pthread_mutex_lock(&mutex);
-		writestatus(blockNum);
-		pthread_mutex_unlock(&mutex);
-
-ENDLOOP:
-    //Call pclose() here so it always gets called
-    pclose(cmdf);
+		//Call pclose() here so it always gets called
+    		pclose(cmdf);
 		//Kill thread if created by signal
 		if ( block->calledBySignal){
 			block->calledBySignal = 0;

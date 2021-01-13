@@ -67,12 +67,12 @@ void *blockLoop(void *currentBlock)
 
 	//Use temporary string so output doesn't get blank for other threads
 	char str[255] = {0};
-	strcpy(str, block->icon);
 	
 	//Loop until program is to be killed (may be un-necessary)
 	while (statusContinue) {
 		FILE *cmdf = popen(block->command, "r");
 		if (cmdf) {
+			strcpy(str, block->icon);
 			int i = strlen(block->icon);
 			fgets(str+i, CMDLENGTH-i-delimLen, cmdf);
 			i = strlen(str);

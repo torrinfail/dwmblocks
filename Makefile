@@ -2,6 +2,8 @@ PREFIX  ?= /usr/local
 CC      ?= cc
 CFLAGS  = -pedantic -Wall -Wno-deprecated-declarations -Os
 LDFLAGS = -lX11
+# FreeBSD
+#LDFLAGS += -L/usr/local/lib -I/usr/local/include
 
 all: options dwmblocks
 
@@ -18,7 +20,7 @@ blocks.h:
 	cp blocks.def.h $@
 
 clean:
-	${RM} *.o *.gch dwmblocks
+	rm -rf *.o *.gch dwmblocks
 
 install: dwmblocks
 	mkdir -p ${DESTDIR}${PREFIX}/bin
@@ -26,6 +28,6 @@ install: dwmblocks
 	chmod 755 ${DESTDIR}${PREFIX}/bin/dwmblocks
 
 uninstall:
-	${RM} ${DESTDIR}${PREFIX}/bin/dwmblocks
+	rm -rf ${DESTDIR}${PREFIX}/bin/dwmblocks
 
 .PHONY: all options clean install uninstall

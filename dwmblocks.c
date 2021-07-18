@@ -6,7 +6,7 @@
 #ifndef NO_X
 #include<X11/Xlib.h>
 #endif
-#ifdef __OpenBSD__
+#if defined(__OpenBSD__) || defined(__FreeBSD__)
 #define SIGPLUS			SIGUSR1+1
 #define SIGMINUS		SIGUSR1-1
 #else
@@ -24,7 +24,7 @@ typedef struct {
 	unsigned int interval;
 	unsigned int signal;
 } Block;
-#ifndef __OpenBSD__
+#if !defined(__OpenBSD__) || !defined(__FreeBSD__)
 void dummysighandler(int num);
 #endif
 void sighandler(int num);
@@ -102,7 +102,7 @@ void getsigcmds(unsigned int signal)
 
 void setupsignals()
 {
-#ifndef __OpenBSD__
+#if !defined(__OpenBSD__) || !defined(__FreeBSD__)
 	    /* initialize all real time signals with dummy handler */
     for (int i = SIGRTMIN; i <= SIGRTMAX; i++)
         signal(i, dummysighandler);
@@ -170,7 +170,7 @@ void statusloop()
 	}
 }
 
-#ifndef __OpenBSD__
+#if !defined(__OpenBSD__) || !defined(__FreeBSD__)
 /* this signal handler should do nothing */
 void dummysighandler(int signum)
 {

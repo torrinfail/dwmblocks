@@ -9,6 +9,8 @@ Blocks are added and removed by editing the blocks.h header file.
 By default the blocks.h header file is created the first time you run make which copies the default config from blocks.def.h.
 This is so you can edit your status bar commands and they will not get overwritten in a future update.
 # patches
-Here is the patch used in this fork of dwmblocks to have modular, clickable statusbar
+Here are the patches used in dwm and dwmblocks to give dwm the ability to signal dwmblocks, the location and button when clicking on the script icon on the status bar. This allows to perform additional actions like open up a terminal with the output/program or in combination with shift key open said script in vim for configuration:
 <br>
-<a href=https://gist.github.com/IGeraGera/e4a5583b91b3eec2e81fdceb44dea717>dwmblocks-statuscmd-b6b0be4.diff</a>
+<a href=https://dwm.suckless.org/patches/statuscmd/dwm-statuscmd-20210405-67d76bd.diff>dwm-statuscmd-20210405-67d76bd.diff</a>
+<br>
+<a href=https://dwm.suckless.org/patches/statuscmd/dwmblocks-statuscmd-20210402-96cbb45.diff>dwmblocks-statuscmd-20210402-96cbb45.diff</a>

@@ -1,15 +1,16 @@
-# dwmblocks
-Modular status bar for dwm written in c.
-# usage
-To use dwmblocks first run 'make' and then install it with 'sudo make install'.
-After that you can put dwmblocks in your xinitrc or other startup script to have it start with dwm.
-# modifying blocks
-The statusbar is made from text output from commandline programs.
-Blocks are added and removed by editing the blocks.h header file.
-By default the blocks.h header file is created the first time you run make which copies the default config from blocks.def.h.
-This is so you can edit your status bar commands and they will not get overwritten in a future update.
-# patches
-Here are some patches to dwmblocks that add features that I either don't want to merge in, or that require a dwm patch to work.
-I do not maintain these but I will take pull requests to update them.
-<br>
-<a href=https://gist.github.com/IGeraGera/e4a5583b91b3eec2e81fdceb44dea717>dwmblocks-statuscmd-b6b0be4.diff</a>
+# DWMBlocks
+Made to compile for OpenBSD. Comment out the OpenBSD line in the Makefile to compile for Linux. Uncomment the FreeBSD line to compile for FreeBSD.
+
+# Compiling and Installing
+`make && doas make install`
+Replace doas with sudo as necessary.
+
+# Dependencies
+Each module depends on a script of mine, specifically the following:
+- `sb-cpuusage`
+- `sb-volume` (need to find a better solution)
+- `sb-memory`
+- `sb-cputemp`
+- `sb-network`
+- `sb-battery`
+All of these scripts can be found in my [dotfiles repo](/swindlesmccoop/not-just-dotfiles). Simply download each script, make them each executable, and place them somewhere in your $PATH.

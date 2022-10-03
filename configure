@@ -1,17 +1,23 @@
 #!/bin/sh
 OS=$(uname)
 
-sed -i 's/##/#/g' Makefile
-sed -i '7 s/^/#/' Makefile
-sed -i '9 s/^/#/' Makefile
-sed -i 's/##/#/g' Makefile
+case $OS in
+	Linux) cp -f makefiles/Makefile.linux Makefile ;;
+	OpenBSD) cp -f makefiles/Makefile.openbsd Makefile ;;
+	FreeBSD) cp -f makefiles/Makefile.freebsd Makefile ;;
+esac
 
-if [ "$OS" = "Linux " ]; then
-	true
-else if [ "$OS" = "FreeBSD" ]; then
-	sed -i '7 s/.//' Makefile
-else if [ "$OS" = "OpenBSD" ]; then
-	sed -i '9 s/.//' Makefile
-fi
-fi
-fi
+#sed -i 's/##/#/g' Makefile
+#sed -i '7 s/^/#/' Makefile
+#sed -i '9 s/^/#/' Makefile
+#sed -i 's/##/#/g' Makefile
+#
+#if [ "$OS" = "Linux " ]; then
+#	true
+#else if [ "$OS" = "FreeBSD" ]; then
+#	sed -i '7 s/.//' Makefile
+#else if [ "$OS" = "OpenBSD" ]; then
+#	sed -i '9 s/.//' Makefile
+#fi
+#fi
+#fi

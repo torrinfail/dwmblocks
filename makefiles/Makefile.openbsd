@@ -3,6 +3,8 @@ CC      := cc
 CFLAGS  := -pedantic -Wall -Wno-deprecated-declarations -Os
 LDFLAGS := -lX11
 
+LDFLAGS += -L/usr/X11R6/lib -I/usr/X11R6/include
+
 all: options dwmblocks
 
 options:

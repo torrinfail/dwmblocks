@@ -7,6 +7,11 @@ Status bar built for my build of [DWM](/swindlesmccoop/dwm). Compatibel with Lin
 ```
 Replace doas with sudo as necessary.
 
+## Software Made to Work With This
+- [DWM](/swindlesmccoop/dwm)
+- [DMenu](/swindlesmccoop/dmenu)
+- [ST](/swindlesmccoop/st)
+
 # Dependencies
 Each module depends on a script of mine, specifically the following:
 - `sb-cpuusage`

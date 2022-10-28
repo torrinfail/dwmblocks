@@ -1,8 +1,16 @@
 //Modify this file to change what commands output to your statusbar, and recompile using the make command.
+#ifdef __linux__
+	#define SIG 10
+#elif __OpenBSD__
+	#define SIG 1
+#elif __FreeBSD__
+	#define SIG 1
+#endif
+
 static const Block blocks[] = {
 //	  Label		   Command				Int		SIG
 	{"CPU: ",	"sb-cpuusage",			1,		0},
-	{"Vol: ",	"sb-volume",			1,		0},
+	{"Vol: ",	"sb-volume",			1,		SIG},
 	{"Mem: ",	"sb-memory",			1,		0},
 	{"Temp: ",	"sb-cputemp -f",		1,		0},
 	//{"IP: ",	"sb-network",			1,		0},

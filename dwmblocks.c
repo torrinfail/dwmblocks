@@ -53,7 +53,6 @@ static void (*writestatus) () = pstdout;
 static char statusbar[LENGTH(blocks)][CMDLENGTH] = {0};
 static char statusstr[2][STATUSLENGTH];
 static int statusContinue = 1;
-static int returnStatus = 0;
 
 //opens process *cmd and stores output in *output
 void getcmd(const Block *block, char *output)
@@ -72,9 +71,8 @@ void getcmd(const Block *block, char *output)
 	}
 	//only chop off newline if one is present at the end
 	i = output[i-1] == '\n' ? i-1 : i;
-	if (delim[0] != '\0') {
+	if (delim[0] != '\0')
 		strncpy(output+i, delim, delimLen); 
-	}
 	else
 		output[i++] = '\0';
 	pclose(cmdf);
@@ -103,9 +101,9 @@ void getsigcmds(unsigned int signal)
 void setupsignals()
 {
 #ifndef __OpenBSD__
-	    /* initialize all real time signals with dummy handler */
-    for (int i = SIGRTMIN; i <= SIGRTMAX; i++)
-        signal(i, dummysighandler);
+	/* initialize all real time signals with dummy handler */
+	for (int i = SIGRTMIN; i <= SIGRTMAX; i++)
+		signal(i, dummysighandler);
 #endif
 
 	for (unsigned int i = 0; i < LENGTH(blocks); i++) {
@@ -174,7 +172,7 @@ void statusloop()
 /* this signal handler should do nothing */
 void dummysighandler(int signum)
 {
-    return;
+	return;
 }
 #endif
 
@@ -191,12 +189,11 @@ void termhandler()
 
 int main(int argc, char** argv)
 {
-	for (int i = 0; i < argc; i++) {//Handle command line arguments
+	for (int i = 0; i < argc; i++)//Handle command line arguments
 		if (!strcmp("-d",argv[i]))
 			strncpy(delim, argv[++i], delimLen);
 		else if (!strcmp("-p",argv[i]))
 			writestatus = pstdout;
-	}
 #ifndef NO_X
 	if (!setupX())
 		return 1;

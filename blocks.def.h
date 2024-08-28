@@ -9,3 +9,7 @@ static const Block blocks[] = {
 //sets delimiter between status commands. NULL character ('\0') means no delimiter.
 static char delim[] = " | ";
 static unsigned int delimLen = 5;
+
+// Sets delimiters around the full statusbar. NULL character ('\0') means no delimeter.
+static char leftpad[]  = "   ";
+static char rightpad[] = " ";

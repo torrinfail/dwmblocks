@@ -53,32 +53,26 @@ static void (*writestatus) () = pstdout;
 static char statusbar[LENGTH(blocks)][CMDLENGTH] = {0};
 static char statusstr[2][STATUSLENGTH];
 static int statusContinue = 1;
-static int returnStatus = 0;
 
 //opens process *cmd and stores output in *output
 void getcmd(const Block *block, char *output)
 {
-	//make sure status is same until output is ready
-	char tempstatus[CMDLENGTH] = {0};
-	strcpy(tempstatus, block->icon);
-	FILE *cmdf = popen(block->command, "r");
-	if (!cmdf)
-		return;
-	int i = strlen(block->icon);
-	fgets(tempstatus+i, CMDLENGTH-i-delimLen, cmdf);
-	i = strlen(tempstatus);
-	//if block and command output are both not empty
-	if (i != 0) {
-		//only chop off newline if one is present at the end
-		i = tempstatus[i-1] == '\n' ? i-1 : i;
-		if (delim[0] != '\0') {
-			strncpy(tempstatus+i, delim, delimLen);
-		}
-		else
-			tempstatus[i++] = '\0';
-	}
-	strcpy(output, tempstatus);
-	pclose(cmdf);
+    strcpy(output, block->icon);
+    FILE *cmdf = popen(block->command, "r");
+    if (!cmdf)
+        return;
+    int i = strlen(block->icon);
+    fgets(output + i, CMDLENGTH - i - delimLen, cmdf);
+    i = strlen(output);
+    if (i > 0) {
+        if (output[i-1] == '\n')
+            i--;
+        if (delim[0] != '\0')
+            strncpy(output + i, delim, delimLen);
+        else
+            output[i] = '\0';
+    }
+    pclose(cmdf);
 }
 
 void getcmds(int time)
